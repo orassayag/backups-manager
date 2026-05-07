@@ -12,11 +12,17 @@ async function main(): Promise<void> {
   // 1. Validation
   validateSettings(settings);
 
+  // Check for CLI arguments
+  const args = process.argv.slice(2);
+  const isAuto = args.includes('--auto');
+  const opArg = args.find((arg) => arg.startsWith('--operation='));
+  const forcedOp = opArg ? (opArg.split('=')[1] as MenuChoice) : null;
+
   let operation: MenuChoice;
 
   // 2. Mode selection
-  if (settings.automaticMode) {
-    operation = settings.automaticOperation;
+  if (isAuto || settings.automaticMode) {
+    operation = forcedOp || settings.automaticOperation;
   } else {
     operation = await showMainMenu();
   }
@@ -38,7 +44,7 @@ async function main(): Promise<void> {
   }
 
   // 3. Confirmation (Skip if automatic)
-  if (!settings.automaticMode) {
+  if (!isAuto && !settings.automaticMode) {
     const confirmed = await showConfirmation(
       settings,
       operation as 'full' | 'diff'

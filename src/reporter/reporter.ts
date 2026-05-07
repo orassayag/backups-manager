@@ -30,6 +30,14 @@ function buildReport(result: BackupResult): string {
     result.endTime.getTime() - result.startTime.getTime()
   );
 
+  // Filter out internal cache files from the report
+  const filteredDiffEntries = result.diffEntries.filter(
+    (e) => !e.relativePath.includes('.backup-cache.json')
+  );
+  const filteredFailedFiles = result.failedFiles.filter(
+    (f) => !f.sourcePath.includes('.backup-cache.json')
+  );
+
   lines.push('BACKUP MANAGER REPORT');
   lines.push('');
   lines.push(`Date/Time  : ${dateStr}`);
@@ -44,10 +52,10 @@ function buildReport(result: BackupResult): string {
   lines.push('');
 
   // ─── Failed files ────────────────────────────────────────────────────────
-  if (result.failedFiles.length > 0) {
-    lines.push(`⚠  FAILED FILES (${result.failedFiles.length}):`);
+  if (filteredFailedFiles.length > 0) {
+    lines.push(`⚠  FAILED FILES (${filteredFailedFiles.length}):`);
     lines.push('-'.repeat(60));
-    result.failedFiles.forEach((f) => {
+    filteredFailedFiles.forEach((f) => {
       lines.push(`  Source : ${f.sourcePath}`);
       lines.push(`  Target : ${f.targetPath}`);
       lines.push(`  Error  : ${f.error}`);
@@ -60,14 +68,14 @@ function buildReport(result: BackupResult): string {
 
   // ─── Diff table ──────────────────────────────────────────────────────────
   if (result.operation === 'diff') {
-    if (result.diffEntries.length > 0) {
-      lines.push(`Changed files (${result.diffEntries.length}):`);
+    if (filteredDiffEntries.length > 0) {
+      lines.push(`Changed files (${filteredDiffEntries.length}):`);
       lines.push('');
       lines.push(
         `${'File name'.padEnd(COL_PATH)}| ${'Size'.padEnd(COL_SIZE)}| Action`
       );
       lines.push(SEPARATOR);
-      result.diffEntries.forEach((entry) => {
+      filteredDiffEntries.forEach((entry) => {
         const name = truncatePath(entry.relativePath, COL_PATH - 1).padEnd(
           COL_PATH
         );
@@ -77,13 +85,13 @@ function buildReport(result: BackupResult): string {
       });
       lines.push(SEPARATOR);
       lines.push('');
-      const added = result.diffEntries.filter(
+      const added = filteredDiffEntries.filter(
         (e) => e.action === 'added'
       ).length;
-      const updated = result.diffEntries.filter(
+      const updated = filteredDiffEntries.filter(
         (e) => e.action === 'updated'
       ).length;
-      const deleted = result.diffEntries.filter(
+      const deleted = filteredDiffEntries.filter(
         (e) => e.action === 'deleted'
       ).length;
       lines.push(

@@ -138,9 +138,25 @@ export function scanDirectory(
 
     const absEntry = path.join(absDir, entry.name);
     if (entry.isDirectory()) {
-      results.push(
-        ...scanDirectory(rootDir, excludeNames, excludePatterns, relEntry)
+      const subFiles = scanDirectory(
+        rootDir,
+        excludeNames,
+        excludePatterns,
+        relEntry
       );
+      if (subFiles.length > 0) {
+        results.push(...subFiles);
+      } else {
+        // If directory is empty (or all its contents are excluded), still track the directory itself
+        // so we can identify it for deletion if needed.
+        // We'll use a special size of -1 to indicate a directory.
+        results.push({
+          relativePath: relEntry,
+          absolutePath: absEntry,
+          size: -1,
+          mtime: 0,
+        });
+      }
     } else if (entry.isFile()) {
       try {
         const stat = fs.statSync(absEntry);

@@ -26,7 +26,7 @@ const settings: Settings = {
   sourcePath: 'C:\\Users\\Or Assayag\\Desktop\\job-interviews-backup1',
 
   // ─── TARGETS ─────────────────────────────────────────────────────────────────
-  targetPaths: ['E:\\job-interviews-backup2'],
+  targetPaths: ['E:\\job-interviews-backup2', 'D:\\job-interviews-backup3'],
 
   // ─── EXCLUSIONS ──────────────────────────────────────────────────────────────
   excludeNames: [

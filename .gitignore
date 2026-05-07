@@ -24,6 +24,7 @@ api-stats.json
 # Misc
 .DS_Store
 .pnpm-store
+.cache/
 
 # Tests
 coverage

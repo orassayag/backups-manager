@@ -1,6 +1,8 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import settings from './settings/settings';
 import { validateSettings } from './validators/validators';
-import { showMainMenu, showConfirmation } from './menu/menu';
+import { showMainMenu, showConfirmation, MenuChoice } from './menu/menu';
 import { runFullBackup } from './full-backup/fullBackup';
 import { runDiffBackup } from './diff-backup/diffBackup';
 import { writeReport } from './reporter/reporter';
@@ -10,7 +12,7 @@ async function main(): Promise<void> {
   // 1. Validation
   validateSettings(settings);
 
-  let operation: 'full' | 'diff' | 'exit';
+  let operation: MenuChoice;
 
   // 2. Mode selection
   if (settings.automaticMode) {
@@ -21,6 +23,17 @@ async function main(): Promise<void> {
 
   if (operation === 'exit') {
     console.log('Exiting...');
+    process.exit(0);
+  }
+
+  if (operation === 'clear-cache') {
+    const cacheDir = path.join(process.cwd(), '.cache');
+    if (fs.existsSync(cacheDir)) {
+      fs.rmSync(cacheDir, { recursive: true, force: true });
+      console.log('\n✅ Cache cleared successfully.');
+    } else {
+      console.log('\nℹ️ No cache found to clear.');
+    }
     process.exit(0);
   }
 

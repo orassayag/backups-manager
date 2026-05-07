@@ -7,7 +7,7 @@ import inquirer from 'inquirer';
 import { Settings } from '../settings/settings';
 import { resolvePath } from '../utils/utils';
 
-export type MenuChoice = 'full' | 'diff' | 'exit';
+export type MenuChoice = 'full' | 'diff' | 'clear-cache' | 'exit';
 
 /** Display the main operation menu and return the user's choice. */
 export async function showMainMenu(): Promise<MenuChoice> {
@@ -19,7 +19,8 @@ export async function showMainMenu(): Promise<MenuChoice> {
       choices: [
         { name: '1. Full backup', value: 'full' },
         { name: '2. Diff backup', value: 'diff' },
-        { name: '3. Exit', value: 'exit' },
+        { name: '3. Clear cache', value: 'clear-cache' },
+        { name: '4. Exit', value: 'exit' },
       ],
     },
   ]);

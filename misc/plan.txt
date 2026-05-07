@@ -1,0 +1,48 @@
+backups-manager
+
+https://github.com/orassayag/backups-manager
+
+I want to build a project which it's goal is to backup files via multiple paths by checking the diff between the source and the target paths. It will also, do a full backup (with the option to exclude files and folder and paths patterns) with a progress bar and percentage progress.
+
+Plan.
+1. This app should be compatible for windows/mac/ubuntu files and folders syntax - in all the parts of the logic.
+2. In a settings.ts file, there will be a source path. In this path you will place the root source of the directory to compare to, include all subdirectories recursively.
+3. Also, in the settings.ts you will have a list of specific folders and patterns (file/folder names) to ignore them completely during the comparison. This list will also serve later for the diff backup operation.
+4. In the settings ts, we will have an array of targets paths (destination paths) to compare to.
+5. Both when running manually and automatically (Windows Task Scheduler) from outside from a bat file, we will have a validation for: the source paths, and targets paths (both of them are required - at least 1 target path required), and all the others settings which are valid - If not throw an error and exit.
+6. When running manually, we should display a drop down menu to select between 3 options:
+"
+1. Full backup
+2. Diff backup
+3. Exit
+"
+Take the dropdown logic and package the same as we have in the "C:\Or\web\projects\events-and-people-syncer" project ("@types/inquirer" + "inquirer").
+
+7. When selecting "Full backup" we will display the source path and the target path and the exclude and filter patterns and wait for user to confirm (y/n). If selected n it will exit. If selected y, it will do a full backup, with the exclude and filters applied. If some file failed to be copied (timeout or any other error) it will keep the path the file details and continue to the next one. In the end we will print a report into the desktop called "BACKUP_REPORT.txt" with the date and the time (jerusalem time - pattern of dd/MM/yyyy hh:mm:ss | Example: 13/05/2026 22:34:34) and if exists failed files they will be included in the report. Other than that - in the full backup no need to mention anything else.
+
+8. When selection "Diff backup" we first use the https://www.npmjs.com/package/dir-compare package to identify the diffs between the source and the target paths, with the filtering and the excluded files. IMPORTANT: If the https://www.npmjs.com/package/dir-compare package don't do it, we need to think of a smart way to scan the files efficiently and effectively in order not to scan again and again each night the same files again, but (maybe with cache?) locate in a smart way only the real files that changed without scanning and re-scanning the entire folders and sub folders each time. You need to investigate if the package does that, and if not, think of a way to do it.
+8.
+8.1. Same as in 7, we also here we will display the source path and the target path and the exclude and filter patterns and wait for user to confirm (y/n). If selected n it will exit. If selected y, it will start to scan for the folders and files to update.
+8.2. Once we have the complete list of folders and files to update, we will update them.
+8.3. Same as in 7, If some file failed to be copied (timeout or any other error) it will keep the path the file details and continue to the next one. In the end we will print a report into the desktop called "BACKUP_REPORT.txt" with the date and the time (jerusalem time - pattern of dd/MM/yyyy hh:mm:ss | Example: 13/05/2026 22:34:34) and if exists failed files they will be included in the report.
+8.4. In the end of the report, in the diff backup, we will have a list of all the folders and files that have been updated (add / updated / deleted), in the following structure:
+Total Duration: 4h 22m 13s
+Source: path/to/source
+Targets:
+path1/to/target1
+path2/to/target2
+
+File name                                       | size      | action
+=====================================================================
+path/to/test1.ts                                  34.4 KB     added
+path/to/test2.ts                                  1.4 KB      updated
+path/to/test3.ts                                  2.9 MB      deleted
+=====================================================================
+(if the file name too long add "..." in the start to fit this structure - no multiple lines in this table).
+9. While working, it will display a progress bar using the "ora" npm package (    "ora": ) it will display the following (and will update each second):
+9.1. When scanning (For example):
+Time: 00:03:32 | Scanning...
+9.2. When copying (For example):
+Time: 00:03:32 | 34.4% | Copying #SOURCE# to #TARGET#
+(The percentage is for the total work, not for a specific copy operation)
+9.3. This progress bar will be displayed both on Full backup and Diff backup.

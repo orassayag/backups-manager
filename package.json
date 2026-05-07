@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "CLI tool for differential and full file backups across multiple paths by comparing source and target directories. Supports exclude patterns for files, folders, and paths, displays real-time progress and percentage indicators, and generates detailed reports of updated files into a log file.",
   "type": "module",
-  "private": true,
+  "private": false,
   "repository": {
     "type": "git",
     "url": "git://github.com/orassayag/backups-manager.git"
@@ -77,11 +77,17 @@
     "node": ""
   },
   "dependencies": {
-    "dotenv": "^17.4.2"
+    "dir-compare": "^4.2.0",
+    "dotenv": "^17.4.2",
+    "inquirer": "^8.2.6",
+    "micromatch": "^4.0.8",
+    "ora": "^5.4.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@rolldown/binding-win32-x64-msvc": "^1.0.0-rc.18",
+    "@types/inquirer": "^9.0.9",
+    "@types/micromatch": "^4.0.10",
     "@types/node": "^25.6.0",
     "@typescript-eslint/eslint-plugin": "^8.59.2",
     "@typescript-eslint/parser": "^8.59.2",

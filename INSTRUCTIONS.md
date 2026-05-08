@@ -7,321 +7,241 @@
    ```bash
    npm install
    ```
-3. Ensure MongoDB is installed and running locally on `mongodb://localhost:27017/`
+3. Configure your backup sessions in `src/sessions/sessions.json`.
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- MongoDB (v4 or higher)
-- Internet connection (for production mode)
+- **Node.js**: Version 18 or higher.
+- **npm** or **pnpm**: For managing packages.
+- **Write Access**: Ensure you have permission to write to the target backup directories and your Desktop (for reports).
 
 ## Configuration
 
 ### Main Settings
 
-Open `src/settings/settings.js` and configure according to your needs:
+Open `src/settings/settings.ts` to configure the global behavior of the application.
 
 #### Production vs Development Mode
 
-- `IS_PRODUCTION_MODE`: Set to `true` for real crawling with Puppeteer, `false` for testing with local sources
-- **Important**: Run `npm run preload` after changing this setting to install/remove Puppeteer package
+- **Interactive Mode**: Run `npm start` to manually select backup operations and see confirmations.
+- **Automatic Mode**: Set `automaticMode: true` in `settings.ts` to skip all prompts. This is ideal for scheduled tasks.
 
 #### Goal Settings
 
-- `GOAL_TYPE`: Choose from `EMAIL_ADDRESSES`, `MINUTES`, or `LINKS`
-- `GOAL_VALUE`: Set the target value (e.g., 1000 email addresses, 700 minutes, 500 links)
+*(Repurposed for Backup Operations)*
+- **Full Backup**: Copies every file from source to target. Best for initial backups.
+- **Differential Backup**: Syncs only changed files. Best for daily use.
 
 #### Method Settings
 
-- `IS_LINKS_METHOD_ACTIVE`: Enable/disable link crawling from search engines
-- `IS_CRAWL_METHOD_ACTIVE`: Enable/disable email address extraction from pages
+*(Repurposed for Exclusions)*
+- `excludeNames`: Use this to skip specific folders like `node_modules` or `.git`.
+- `excludePatterns`: Use glob patterns to skip file types like `*.log` or `**/.DS_Store`.
 
 #### MongoDB Settings
 
-- `IS_DROP_COLLECTION`: Set to `true` to clear the database before starting (use for testing)
-- `MONGO_DATABASE_NAME`: Database name (default: `crawl`)
-- `MONGO_DATABASE_COLLECTION_NAME`: Collection name (default: `emailaddresses`)
+*(Repurposed for Session Paths)*
+- `sourcePath`: The directory you want to back up.
+- `targetPath`: The destination where the backup will be stored.
+- *Note: These are configured per session in `src/sessions/sessions.json`.*
 
 #### Search Settings
 
-- `SEARCH_KEY`: Set a static search term, or leave as `null` for random search keys
-- `IS_ADVANCE_SEARCH_KEYS`: Use advanced Hebrew search keys (`true`) or basic static keys (`false`)
+*(Repurposed for CLI Overrides)*
+- `--auto`: Force automatic mode via command line.
+- `--operation=full` or `--operation=diff`: Force a specific operation from the command line.
 
 #### Process Limits
 
-- `MAXIMUM_SEARCH_PROCESSES_COUNT`: Number of processes to run (default: 10000 for long runs)
-- `MAXIMUM_SEARCH_ENGINE_PAGES_PER_PROCESS_COUNT`: Pages to crawl per process (default: 1)
-- `MAXIMUM_MINUTES_WITHOUT_UPDATE`: Restart if no progress for X minutes (default: 20)
+- **Windows Path Lengths**: Windows has a default path limit of 260 characters. If your backup source has very deep folder structures, ensure you enable "Long Paths" in Windows settings or keep target paths short.
 
 #### Logging Options
 
-- `IS_LOG_VALID_EMAIL_ADDRESSES`: Log valid emails to TXT file
-- `IS_LOG_FIX_EMAIL_ADDRESSES`: Log fixed emails to TXT file
-- `IS_LOG_INVALID_EMAIL_ADDRESSES`: Log invalid emails to TXT file
-- `IS_LOG_CRAWL_LINKS`: Log crawled links to TXT file
+- **Backup Report**: A `BACKUP_REPORT.txt` is always generated on your Desktop after each session, detailing the success, failures, and file changes.
 
 ### Search Engines Configuration
 
-Edit `src/configurations/files/searchEngines.configuration.js`:
-
-- Configure active search engines (Bing, Google)
-- Set URL patterns and query parameters
-- Enable/disable specific engines
+*(Repurposed for Target Destinations)*
+- You can define multiple target paths for a single source by creating multiple sessions in `sessions.json` with the same `sourcePath` but different `targetPath` values.
 
 ### Search Keys Configuration
 
-Edit `src/configurations/files/searchKeys.configuration.js`:
-
-- `basicSearchKeys`: Static search terms
-- `advanceSearchKeys`: Dynamic Hebrew search key generation rules
+*(Repurposed for Source Directories)*
+- Ensure your `sourcePath` in `sessions.json` points to the root directory you wish to back up. All subdirectories will be included unless excluded.
 
 ### Filter Configurations
 
 #### Email Address Filters
 
-Edit `src/configurations/files/filterEmailAddress.configuration.js`:
-
-- `filterEmailAddressDomains`: Domain parts to filter out
-- `filterEmailAddresses`: Specific email addresses to exclude
+*(Repurposed for Folder Exclusions)*
+- Use the `excludeNames` array in `settings.ts` to skip entire directories by name.
 
 #### Link Filters
 
-Edit `src/configurations/files/filterLinkDomains.configuration.js`:
-
-- `globalFilterLinkDomains`: Domains to filter from all search engines
-- `filterLinkDomains`: Search engine-specific domain filters
+*(Repurposed for File Pattern Exclusions)*
+- Use the `excludePatterns` array in `settings.ts` to skip files matching specific patterns across all directories.
 
 #### File Extension Filters
 
-Edit `src/configurations/files/filterFileExtensions.configuration.js`:
-
-- `filterLinkFileExtensions`: File extensions to skip when crawling (e.g., `.pdf`, `.jpg`)
+- You can skip specific file extensions by adding them to `excludePatterns`, for example: `['**/*.tmp', '**/*.bak']`.
 
 ### Email Domain Configurations
 
-Edit `src/configurations/files/emailAddressDomainsList.configuration.js`:
-
-- List of common email domains (Gmail, Hotmail, etc.)
-- Typo correction mappings
-- Domain validation rules
+*(Repurposed for Cache Management)*
+- The tool uses a `.cache` directory to speed up differential backups. If you experience issues with sync accuracy, you can use the "Clear Cache" option in the interactive menu.
 
 ## Running Scripts
 
 ### Main Crawler (with Monitor)
 
-Starts the crawler with automatic restart on failure:
-
+*(Repurposed for Interactive Menu)*
+Starts the tool with an interactive menu to choose your backup mode:
 ```bash
 npm start
 ```
 
-This launches the monitor which:
-
-- Shows confirmation screen with current settings
-- Automatically restarts on errors/timeout
-- Tracks progress and statistics
-- Logs all data to `dist/production/` or `dist/development/`
-
 ### Backup
 
-Creates a backup of the project:
-
+*(Repurposed for Automatic Differential Backup)*
+Runs a differential backup automatically based on your `settings.ts` and `sessions.json`:
 ```bash
-npm run backup
+npm run sync
 ```
 
 ### Domain Counter
 
-Counts email address domains from files or MongoDB:
-
-```bash
-npm run domains
-```
+*(Repurposed for Cache Clearing)*
+To clear the comparison cache manually:
+1. Run `npm start`.
+2. Select **Clear Cache** from the menu.
 
 ### Tests
 
 #### Validate Single Email
 
-Tests email validation logic:
-
+*(Repurposed for Unit Testing)*
+Runs the project's test suite to ensure everything is functioning correctly:
 ```bash
-npm run val
+npm test
 ```
 
 #### Validate Multiple Emails
 
-Validates a batch of email addresses:
-
+Runs tests in watch mode for development:
 ```bash
-npm run valmany
+npm run test:watch
 ```
 
 #### Debug Email Validation
 
-Runs validation with Node.js inspector:
-
+Opens the Vitest UI for a more detailed look at test results:
 ```bash
-npm run valdebug
+npm run test:ui
 ```
 
 #### Test Typos
 
-Tests email typo detection and correction:
-
-```bash
-npm run typos
-```
+*(Reserved for future use)*
 
 #### Test Link Crawling
 
-Tests crawling links from a specific page:
-
-```bash
-npm run link
-```
+*(Reserved for future use)*
 
 #### Test Session Links
 
-Tests crawling multiple predefined links:
-
-```bash
-npm run session
-```
+*(Reserved for future use)*
 
 #### Email Generator Test
 
-Tests random email address generation:
-
-```bash
-npm run generator
-```
+*(Reserved for future use)*
 
 #### Test Cases
 
-Runs comprehensive email validation test cases:
-
-```bash
-npm run cases
-```
+*(Reserved for future use)*
 
 #### Sandbox
 
-General testing sandbox:
-
-```bash
-npm run sand
-```
+You can use `src/index.ts` as a starting point for any custom backup logic adjustments.
 
 ## Quick Start Guide
 
 ### For Testing (Development Mode)
 
-1. Open `src/settings/settings.js`
-2. Set `IS_PRODUCTION_MODE: false`
-3. Set `GOAL_TYPE: GoalTypeEnum.EMAIL_ADDRESSES`
-4. Set `GOAL_VALUE: 10`
-5. Set `IS_LONG_RUN: false`
-6. Run: `npm start`
+1. Ensure your `sessions.json` points to a small test directory.
+2. Run `npm start`.
+3. Select **Full Backup** to see the initial copy process.
+4. Modify a file in the source and run `npm start` again, selecting **Differential Backup**.
 
 ### For Production Crawling
 
-1. Open `src/settings/settings.js`
-2. Set `IS_PRODUCTION_MODE: true`
-3. Run: `npm run preload` (installs Puppeteer)
-4. Configure search engines in `searchEngines.configuration.js`
-5. Configure search keys in `searchKeys.configuration.js`
-6. Configure filters as needed
-7. Ensure MongoDB is running
-8. Run: `npm start`
-9. Confirm settings when prompted (type `y`)
+*(Repurposed for Production Backups)*
+1. Configure your real source and target paths in `sessions.json`.
+2. Set `automaticMode: true` in `settings.ts`.
+3. Set up a Windows Task Scheduler task to run `automatic-backup.bat` daily.
+4. Check your Desktop for the `BACKUP_REPORT.txt` to verify success.
 
 ## File Structure
 
-### Source Files (`src/`)
+### Source Files (src/)
 
-- `monitor/monitor.js` - Main entry point with restart monitoring
-- `scripts/crawl.script.js` - Crawling script logic
-- `logics/crawl.logic.js` - Core crawling orchestration
-- `services/` - Business logic services
-- `configurations/` - Configuration files
-- `settings/settings.js` - Main settings file
-- `utils/` - Utility functions
-- `core/` - Models and enums
+- `index.ts`: Main entry point and CLI orchestration.
+- `sessions/sessions.json`: Your backup task definitions.
+- `settings/settings.ts`: Global exclusion and mode settings.
+- `diff-backup/`: Logic for comparing and syncing changes.
+- `full-backup/`: Logic for complete directory replication.
+- `utils/`: Common helpers for file operations and path resolving.
 
-### Output Files (`dist/`)
+### Output Files (dist/)
 
-Generated files are placed in `dist/production/` or `dist/development/` with date-based subdirectories:
-
-- `valid_email_addresses.txt` - Valid emails found
-- `fix_email_addresses.txt` - Emails that were corrected
-- `invalid_email_addresses.txt` - Invalid emails
-- `crawl_links.txt` - Links crawled
-- `crawl_error_links.txt` - Links that failed
+- `BACKUP_REPORT.txt`: Found on your Desktop after execution.
+- `.cache/`: Internal directory used for differential comparison state.
 
 ## Understanding the Console Status Line
 
-When running, you'll see a real-time status line with:
-
-```
-===[SETTINGS] Mode: PRODUCTION | Plan: STANDARD | Database: crawl | Drop: false | Long: true | Active Methods: LINKS,CRAWL===
-===[GENERAL] Time: 00.00:00:12 [\] | Goal: MINUTES | Progress: 0/700 (00.00%) | Status: CRAWL | Restarts: 0===
-===[PROCESS] Process: 1/10,000 | Page: 1/1 | Engine: Bing | Key: search term===
-===[LINK] Crawl: ✅  13 | Total: 40 | Filter: 27 | Error: 0 | Error In A Row: 0 | Current: 2/13===
-===[EMAIL ADDRESS] Save: ✅  0 | Total: 2 | Database: 15,915 | Exists: 1 | Invalid: ❌  0 | Valid Fix: 0 | Invalid Fix: 0 | Unsave: 0 | Filter: 0 | Skip: 0 | Gibberish: 0===
-```
-
-- **SETTINGS**: Current mode and configuration
-- **GENERAL**: Runtime, goal progress, current status
-- **PROCESS**: Process number, page number, search engine, search key
-- **LINK**: Link crawling statistics
-- **EMAIL ADDRESS**: Email collection statistics
+When running, the tool displays a live progress line:
+- **Time**: Time elapsed since the start of the current session.
+- **Percentage**: Progress based on the total number of files to process.
+- **Current Action**: Shows whether it is scanning, copying, or deleting a specific file.
 
 ## Troubleshooting
 
 ### Application Won't Start
 
-- Ensure MongoDB is running: `mongod`
-- Check Node version: `node --version` (should be v14+)
-- Delete `node_modules` and run `npm install` again
+- Ensure you have run `npm install`.
+- Verify that your `sessions.json` and `settings.ts` have no syntax errors.
+- Ensure you are using Node.js v18 or newer.
 
 ### No Email Addresses Being Found
 
-- Check if search engines changed their HTML structure
-- Verify internet connection
-- Check filter configurations (might be too aggressive)
-- Examine `dist/.../crawl_error_links.txt` for errors
+*(Repurposed for Backup Issues)*
+- Check if the `sourcePath` exists and contains files.
+- Verify that your `excludeNames` or `excludePatterns` aren't skipping all your files.
+- Check the `BACKUP_REPORT.txt` for specific error messages.
 
 ### Puppeteer Errors
 
-- Ensure Chromium dependencies are installed (Linux)
-- Try running with `IS_PRODUCTION_MODE: false` first
-- Check for antivirus interference
+*(Repurposed for File System Errors)*
+- Ensure the target drive has enough free space.
+- Verify that no files in the source or target are currently locked by another application.
 
 ### MongoDB Connection Errors
 
-- Verify MongoDB is running: `mongo` command should work
-- Check connection string in settings
-- Ensure MongoDB port 27017 is not blocked
+*(Repurposed for Path Errors)*
+- Ensure all paths in `sessions.json` are absolute.
+- On Windows, use double backslashes (`\\`) in JSON for paths.
 
 ### Application Keeps Restarting
 
-- Check `MAXIMUM_MINUTES_WITHOUT_UPDATE` setting
-- Increase timeout values if network is slow
-- Review error logs in dist directory
+- If running via a custom monitor, check the exit codes in the console.
+- Ensure the `BACKUP_REPORT.txt` is not being blocked by another process.
 
 ## Important Notes
 
-- Always run `npm run preload` when switching between production and development modes
-- The application automatically restarts on errors (up to 50 times)
-- All email addresses are validated and can be auto-corrected for common typos
-- Gibberish detection is enabled by default to filter out invalid data
-- Links are filtered to avoid duplicates and unwanted domains
-- Downloads folder is automatically cleaned between processes
+- **Full vs Diff**: Always run a **Full Backup** at least once for a new target to ensure a consistent baseline.
+- **Exclusions**: Be careful with `excludePatterns`; a pattern like `*` will skip all files.
+- **Automation**: When using Task Scheduler, ensure the task is set to "Start in" the project root directory.
 
 ## Author
 
-- **Or Assayag** - _Initial work_ - [orassayag](https://github.com/orassayag)
+- **Or Assayag** - [orassayag](https://github.com/orassayag)
 - Or Assayag <orassayag@gmail.com>
-- GitHub: https://github.com/orassayag
-- StackOverflow: https://stackoverflow.com/users/4442606/or-assayag?tab=profile
-- LinkedIn: https://linkedin.com/in/orassayag

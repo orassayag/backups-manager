@@ -5,7 +5,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { BackupResult } from '../types/types';
+import { BackupResult, SessionResult } from '../types/types';
 import {
   getDesktopPath,
   formatJerusalemTime,
@@ -23,33 +23,31 @@ function truncatePath(p: string, maxLen: number): string {
   return p.length <= maxLen ? p : '...' + p.slice(p.length - (maxLen - 3));
 }
 
-function buildReport(result: BackupResult): string {
+function buildSessionReport(sessionResult: SessionResult): string {
   const lines: string[] = [];
-  const dateStr = formatJerusalemTime(result.startTime);
-  const duration = formatDuration(
-    result.endTime.getTime() - result.startTime.getTime()
-  );
+  const { session, status, diffEntries, failedFiles, error } = sessionResult;
+
+  lines.push('SESSION:');
+  lines.push(`  Source: ${session.sourcePath}`);
+  lines.push(`  Target: ${session.targetPath}`);
+  lines.push(`Status: ${status.toUpperCase()}`);
+
+  if (error) {
+    lines.push(`Error: ${error}`);
+  }
+
+  if (status === 'skipped') {
+    lines.push('');
+    return lines.join('\n');
+  }
 
   // Filter out internal cache files from the report
-  const filteredDiffEntries = result.diffEntries.filter(
-    (e) => !e.relativePath.includes('.backup-cache.json')
+  const filteredDiffEntries = diffEntries.filter(
+    (e) => !e.relativePath.includes('backup-cache.json')
   );
-  const filteredFailedFiles = result.failedFiles.filter(
-    (f) => !f.sourcePath.includes('.backup-cache.json')
+  const filteredFailedFiles = failedFiles.filter(
+    (f) => !f.sourcePath.includes('backup-cache.json')
   );
-
-  lines.push('BACKUP MANAGER REPORT');
-  lines.push('');
-  lines.push(`Date/Time  : ${dateStr}`);
-  lines.push(
-    `Operation  : ${result.operation === 'full' ? 'Full Backup' : 'Diff Backup'}`
-  );
-  lines.push(`Duration   : ${duration}`);
-  lines.push(`Source     : ${result.sourcePath}`);
-  lines.push('');
-  lines.push('Targets:');
-  result.targetPaths.forEach((t) => lines.push(`  ${t}`));
-  lines.push('');
 
   // ─── Failed files ────────────────────────────────────────────────────────
   if (filteredFailedFiles.length > 0) {
@@ -63,46 +61,70 @@ function buildReport(result: BackupResult): string {
     });
   } else {
     lines.push('✓  No failed files.');
-    lines.push('');
   }
 
   // ─── Diff table ──────────────────────────────────────────────────────────
-  if (result.operation === 'diff') {
-    if (filteredDiffEntries.length > 0) {
-      lines.push(`Changed files (${filteredDiffEntries.length}):`);
-      lines.push('');
-      lines.push(
-        `${'File name'.padEnd(COL_PATH)}| ${'Size'.padEnd(COL_SIZE)}| Action`
+  if (filteredDiffEntries.length > 0) {
+    lines.push(`Changed files (${filteredDiffEntries.length}):`);
+    lines.push('');
+    lines.push(
+      `${'File name'.padEnd(COL_PATH)}| ${'Size'.padEnd(COL_SIZE)}| Action`
+    );
+    lines.push(SEPARATOR);
+    filteredDiffEntries.forEach((entry) => {
+      const name = truncatePath(entry.relativePath, COL_PATH - 1).padEnd(
+        COL_PATH
       );
-      lines.push(SEPARATOR);
-      filteredDiffEntries.forEach((entry) => {
-        const name = truncatePath(entry.relativePath, COL_PATH - 1).padEnd(
-          COL_PATH
-        );
-        const size = formatSize(entry.size).padEnd(COL_SIZE);
-        const action = entry.action.padEnd(COL_ACTION);
-        lines.push(`${name}| ${size}| ${action}`);
-      });
-      lines.push(SEPARATOR);
-      lines.push('');
-      const added = filteredDiffEntries.filter(
-        (e) => e.action === 'added'
-      ).length;
-      const updated = filteredDiffEntries.filter(
-        (e) => e.action === 'updated'
-      ).length;
-      const deleted = filteredDiffEntries.filter(
-        (e) => e.action === 'deleted'
-      ).length;
-      lines.push(
-        `Summary: ${added} added, ${updated} updated, ${deleted} deleted.`
-      );
-    } else {
-      lines.push('No differences found – everything is up to date.');
-    }
+      const size = formatSize(entry.size).padEnd(COL_SIZE);
+      const action = entry.action.padEnd(COL_ACTION);
+      lines.push(`${name}| ${size}| ${action}`);
+    });
+    lines.push(SEPARATOR);
+    lines.push('');
+    const added = filteredDiffEntries.filter(
+      (e) => e.action === 'added'
+    ).length;
+    const updated = filteredDiffEntries.filter(
+      (e) => e.action === 'updated'
+    ).length;
+    const deleted = filteredDiffEntries.filter(
+      (e) => e.action === 'deleted'
+    ).length;
+    lines.push(
+      `Summary: ${added} added, ${updated} updated, ${deleted} deleted.`
+    );
+  } else if (status !== 'failed') {
+    lines.push('No differences found – everything is up to date.');
   }
 
   lines.push('');
+  return lines.join('\n');
+}
+
+function buildReport(result: BackupResult): string {
+  const lines: string[] = [];
+  const dateStr = formatJerusalemTime(result.startTime);
+  const duration = formatDuration(
+    result.endTime.getTime() - result.startTime.getTime()
+  );
+
+  lines.push('BACKUP MANAGER REPORT');
+  lines.push('');
+  lines.push(`Date/Time  : ${dateStr}`);
+  lines.push(
+    `Operation  : ${result.operation === 'full' ? 'Full Backup' : 'Diff Backup'}`
+  );
+  lines.push(`Duration   : ${duration}`);
+  lines.push('');
+  lines.push('='.repeat(SEPARATOR.length));
+  lines.push('');
+
+  result.sessionResults.forEach((sessionResult) => {
+    lines.push(buildSessionReport(sessionResult));
+    lines.push('-'.repeat(SEPARATOR.length));
+    lines.push('');
+  });
+
   return lines.join('\n');
 }
 

@@ -5,10 +5,6 @@
  */
 
 export interface Settings {
-  /** The root source directory to backup (all sub-directories included recursively). */
-  sourcePath: string;
-  /** Array of target/destination paths. At least one is required. */
-  targetPaths: string[];
   /** Exact folder/file names to exclude during comparison and backup. */
   excludeNames: string[];
   /**
@@ -22,12 +18,6 @@ export interface Settings {
 }
 
 const settings: Settings = {
-  // ─── SOURCE ──────────────────────────────────────────────────────────────────
-  sourcePath: 'C:\\Users\\Or Assayag\\Desktop\\job-interviews-backup1',
-
-  // ─── TARGETS ─────────────────────────────────────────────────────────────────
-  targetPaths: ['E:\\job-interviews-backup2', 'D:\\job-interviews-backup3'],
-
   // ─── EXCLUSIONS ──────────────────────────────────────────────────────────────
   excludeNames: [
     'node_modules',

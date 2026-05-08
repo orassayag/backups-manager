@@ -17,13 +17,22 @@ export interface FailedFile {
   error: string;
 }
 
+export interface Session {
+  sourcePath: string;
+  targetPath: string;
+}
+
+export interface SessionResult {
+  session: Session;
+  status: 'success' | 'skipped' | 'failed';
+  diffEntries: DiffEntry[];
+  failedFiles: FailedFile[];
+  error?: string;
+}
+
 export interface BackupResult {
   operation: 'full' | 'diff';
   startTime: Date;
   endTime: Date;
-  sourcePath: string;
-  targetPaths: string[];
-  /** Populated for diff backup only */
-  diffEntries: DiffEntry[];
-  failedFiles: FailedFile[];
+  sessionResults: SessionResult[];
 }

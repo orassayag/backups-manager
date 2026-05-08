@@ -1,7 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Settings } from '../settings/settings';
-import { BackupResult, DiffEntry, FailedFile } from '../types/types';
+import {
+  BackupResult,
+  DiffEntry,
+  FailedFile,
+  Session,
+  SessionResult,
+} from '../types/types';
 import {
   scanDirectory,
   resolvePath,
@@ -11,43 +17,68 @@ import {
 import { ProgressTracker } from '../progress/progress';
 
 const CACHE_DIR = path.join(process.cwd(), '.cache');
-const CACHE_FILENAME = 'backup-cache.json';
 
 interface CacheData {
   [relativePath: string]: { size: number; mtime: number };
 }
 
-export async function runDiffBackup(settings: Settings): Promise<BackupResult> {
-  const startTime = new Date();
+/**
+ * Processes a single session for diff backup.
+ */
+async function processSession(
+  session: Session,
+  settings: Settings,
+  progress: ProgressTracker
+): Promise<SessionResult> {
   const failedFiles: FailedFile[] = [];
   const diffEntries: DiffEntry[] = [];
 
-  const sourcePath = resolvePath(settings.sourcePath);
-  const targetPaths = settings.targetPaths.map(resolvePath);
+  const sourcePath = resolvePath(session.sourcePath);
+  const targetPath = resolvePath(session.targetPath);
 
-  if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR, { recursive: true });
+  // 1. Validation
+  if (!session.sourcePath || !session.targetPath) {
+    return {
+      session,
+      status: 'skipped',
+      diffEntries: [],
+      failedFiles: [],
+      error: 'Source or target path is missing or empty',
+    };
   }
-  const cachePath = path.join(CACHE_DIR, CACHE_FILENAME);
 
-  const progress = new ProgressTracker();
+  if (!fs.existsSync(sourcePath)) {
+    return {
+      session,
+      status: 'skipped',
+      diffEntries: [],
+      failedFiles: [],
+      error: `Source path does not exist: ${sourcePath}`,
+    };
+  }
+
+  // 2. Load Cache (using a unique key for each session if possible, but keeping current behavior for now)
+  // For simplicity and to match user request, I'll use the same cache file.
+  // However, to avoid conflicts between sessions, let's use a session-specific cache name.
+  const sessionHash = Buffer.from(`${sourcePath}:${targetPath}`).toString(
+    'hex'
+  );
+  const sessionCachePath = path.join(CACHE_DIR, `cache-${sessionHash}.json`);
+
+  let cache: CacheData = {};
+  if (fs.existsSync(sessionCachePath)) {
+    try {
+      cache = JSON.parse(fs.readFileSync(sessionCachePath, 'utf8'));
+    } catch {
+      cache = {};
+    }
+  }
+
   progress.init(sourcePath);
   progress.start();
   progress.setScanning();
 
-  // 1. Load Cache
-  let cache: CacheData = {};
-  if (fs.existsSync(cachePath)) {
-    try {
-      cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
-    } catch {
-      cache = {};
-    }
-  } else {
-    progress.setCreatingCache();
-  }
-
-  // 2. Scan Source
+  // 3. Scan Source
   const currentFiles = scanDirectory(
     sourcePath,
     settings.excludeNames,
@@ -57,65 +88,39 @@ export async function runDiffBackup(settings: Settings): Promise<BackupResult> {
 
   // Identify Adds and Updates
   for (const file of currentFiles) {
-    if (file.size === -1) continue; // Skip directory entries for copy/update logic
+    if (file.size === -1) continue;
 
     currentFilesMap.set(file.relativePath, file);
 
-    // Check if the file exists and is identical in ALL targets
-    let allTargetsIdentical = true;
-    for (const targetRoot of targetPaths) {
-      const targetFilePath = path.join(
-        targetRoot,
-        file.relativePath.replace(/\//g, path.sep)
-      );
+    const targetFilePath = path.join(
+      targetPath,
+      file.relativePath.replace(/\//g, path.sep)
+    );
 
-      if (!fs.existsSync(targetFilePath)) {
-        allTargetsIdentical = false;
-        break;
-      }
-
+    let identical = false;
+    if (fs.existsSync(targetFilePath)) {
       try {
         const targetStat = fs.statSync(targetFilePath);
-        // Compare size and mtime (allow 1s difference due to filesystem precision)
         const sizeMatch = targetStat.size === file.size;
         const mtimeMatch = Math.abs(targetStat.mtimeMs - file.mtime) < 1000;
-
-        if (!sizeMatch || !mtimeMatch) {
-          allTargetsIdentical = false;
-          break;
+        if (sizeMatch && mtimeMatch) {
+          identical = true;
         }
       } catch {
-        allTargetsIdentical = false;
-        break;
+        // ignore
       }
     }
 
-    if (allTargetsIdentical) {
-      // File is already identical in all targets, skip it
-      continue;
+    if (!identical) {
+      diffEntries.push({
+        relativePath: file.relativePath,
+        size: file.size,
+        action: fs.existsSync(targetFilePath) ? 'updated' : 'added',
+      });
     }
-
-    // Determine if it's an "addition" or "update" based on target existence
-    let existsOnAnyTarget = false;
-    for (const targetRoot of targetPaths) {
-      const targetFilePath = path.join(
-        targetRoot,
-        file.relativePath.replace(/\//g, path.sep)
-      );
-      if (fs.existsSync(targetFilePath)) {
-        existsOnAnyTarget = true;
-        break;
-      }
-    }
-
-    diffEntries.push({
-      relativePath: file.relativePath,
-      size: file.size,
-      action: existsOnAnyTarget ? 'updated' : 'added',
-    });
   }
 
-  // Identify Deletions (Files in cache but no longer in source)
+  // Identify Deletions
   for (const relPath in cache) {
     if (!currentFilesMap.has(relPath)) {
       diffEntries.push({
@@ -126,23 +131,18 @@ export async function runDiffBackup(settings: Settings): Promise<BackupResult> {
     }
   }
 
-  // 3. Scan Targets for Orphan Files/Folders (Not in source and not in cache)
-  for (const targetRoot of targetPaths) {
-    if (!fs.existsSync(targetRoot)) continue;
-
+  // Scan Target for Orphans
+  if (fs.existsSync(targetPath)) {
     const targetFiles = scanDirectory(
-      targetRoot,
+      targetPath,
       settings.excludeNames,
       settings.excludePatterns
     );
-
     for (const tFile of targetFiles) {
       if (!currentFilesMap.has(tFile.relativePath)) {
-        // If it's not in the source, it should be deleted from this target
         const alreadyInDiff = diffEntries.find(
           (e) => e.relativePath === tFile.relativePath && e.action === 'deleted'
         );
-
         if (!alreadyInDiff) {
           diffEntries.push({
             relativePath: tFile.relativePath,
@@ -154,92 +154,110 @@ export async function runDiffBackup(settings: Settings): Promise<BackupResult> {
     }
   }
 
-  const filesToCopy = diffEntries.filter((e) => e.action !== 'deleted');
-  const totalOps =
-    filesToCopy.length * targetPaths.length +
-    (diffEntries.length - filesToCopy.length) * targetPaths.length;
-  progress.setTotalFiles(totalOps);
+  progress.setTotalFiles(diffEntries.length);
 
-  // 3. Execute Operations across all targets
-  for (const targetRoot of targetPaths) {
-    for (const entry of diffEntries) {
-      const targetFilePath = path.join(
-        targetRoot,
-        entry.relativePath.replace(/\//g, path.sep)
-      );
+  // 4. Execute Operations
+  for (const entry of diffEntries) {
+    const targetFilePath = path.join(
+      targetPath,
+      entry.relativePath.replace(/\//g, path.sep)
+    );
 
-      try {
-        if (entry.action === 'deleted') {
-          if (fs.existsSync(targetFilePath)) {
-            const stat = fs.statSync(targetFilePath);
-            if (stat.isDirectory()) {
-              fs.rmSync(targetFilePath, { recursive: true, force: true });
-            } else {
-              fs.unlinkSync(targetFilePath);
-            }
+    try {
+      if (entry.action === 'deleted') {
+        if (fs.existsSync(targetFilePath)) {
+          const stat = fs.statSync(targetFilePath);
+          if (stat.isDirectory()) {
+            fs.rmSync(targetFilePath, { recursive: true, force: true });
+          } else {
+            fs.unlinkSync(targetFilePath);
           }
-        } else {
-          const sourceFile = currentFilesMap.get(entry.relativePath)!;
-
-          // Per-target check: Skip if this specific target is already up to date
-          if (fs.existsSync(targetFilePath)) {
-            try {
-              const targetStat = fs.statSync(targetFilePath);
-              const sizeMatch = targetStat.size === sourceFile.size;
-              const mtimeMatch =
-                Math.abs(targetStat.mtimeMs - sourceFile.mtime) < 1000;
-
-              if (sizeMatch && mtimeMatch) {
-                progress.fileComplete();
-                continue;
-              }
-            } catch {
-              // If stat fails, proceed with copy
-            }
-          }
-
-          progress.setCopying(
-            sourceFile.absolutePath,
-            targetFilePath,
-            targetRoot
-          );
-
-          fs.mkdirSync(path.dirname(targetFilePath), { recursive: true });
-          await copyFile(sourceFile.absolutePath, targetFilePath);
-
-          // Preserve mtime so subsequent runs recognize the file as identical
-          const sourceStat = fs.statSync(sourceFile.absolutePath);
-          fs.utimesSync(targetFilePath, sourceStat.atime, sourceStat.mtime);
         }
-      } catch (err: any) {
-        failedFiles.push({
-          sourcePath: entry.relativePath,
-          targetPath: targetFilePath,
-          error: err.message,
-        });
+      } else {
+        const sourceFile = currentFilesMap.get(entry.relativePath)!;
+        progress.setCopying(
+          sourceFile.absolutePath,
+          targetFilePath,
+          targetPath
+        );
+        fs.mkdirSync(path.dirname(targetFilePath), { recursive: true });
+        await copyFile(sourceFile.absolutePath, targetFilePath);
+        const sourceStat = fs.statSync(sourceFile.absolutePath);
+        fs.utimesSync(targetFilePath, sourceStat.atime, sourceStat.mtime);
       }
-      progress.fileComplete();
+    } catch (err: any) {
+      failedFiles.push({
+        sourcePath: entry.relativePath,
+        targetPath: targetFilePath,
+        error: err.message,
+      });
     }
+    progress.fileComplete();
   }
 
-  // 4. Update Cache (Only with successfully scanned/processed files)
+  // 5. Update Cache
   const newCache: CacheData = {};
   currentFiles.forEach((f) => {
     if (f.size !== -1) {
       newCache[f.relativePath] = { size: f.size, mtime: f.mtime };
     }
   });
-  fs.writeFileSync(cachePath, JSON.stringify(newCache, null, 2));
+  fs.writeFileSync(sessionCachePath, JSON.stringify(newCache, null, 2));
 
   progress.stop(failedFiles.length === 0);
+
+  return {
+    session,
+    status: failedFiles.length > 0 ? 'failed' : 'success',
+    diffEntries,
+    failedFiles,
+  };
+}
+
+export async function runDiffBackup(settings: Settings): Promise<BackupResult> {
+  const startTime = new Date();
+  const sessionResults: SessionResult[] = [];
+
+  const sessionsPath = path.join(
+    process.cwd(),
+    'src',
+    'sessions',
+    'sessions.json'
+  );
+
+  // 1. Check for sessions file
+  if (!fs.existsSync(sessionsPath)) {
+    throw new Error(`Sessions file not found at ${sessionsPath}`);
+  }
+
+  let sessions: Session[] = [];
+  try {
+    const sessionsContent = fs.readFileSync(sessionsPath, 'utf8');
+    sessions = JSON.parse(sessionsContent);
+  } catch (err: any) {
+    throw new Error(`Error reading sessions.json: ${err.message}`);
+  }
+
+  if (!sessions || sessions.length === 0) {
+    throw new Error('No sessions found in sessions.json');
+  }
+
+  if (!fs.existsSync(CACHE_DIR)) {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+  }
+
+  const progress = new ProgressTracker();
+
+  // 2. Process each session
+  for (const session of sessions) {
+    const result = await processSession(session, settings, progress);
+    sessionResults.push(result);
+  }
 
   return {
     operation: 'diff',
     startTime,
     endTime: new Date(),
-    sourcePath,
-    targetPaths,
-    diffEntries,
-    failedFiles,
+    sessionResults,
   };
 }

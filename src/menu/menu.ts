@@ -4,8 +4,10 @@
  */
 
 import inquirer from 'inquirer';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Settings } from '../settings/settings';
-import { resolvePath } from '../utils/utils';
+import { Session } from '../types/types';
 
 export type MenuChoice = 'full' | 'diff' | 'clear-cache' | 'exit';
 
@@ -28,23 +30,42 @@ export async function showMainMenu(): Promise<MenuChoice> {
 }
 
 /**
- * Display confirmation prompt showing source, targets, and exclusions.
+ * Display confirmation prompt showing sessions and exclusions.
  * Returns true if user confirms.
  */
 export function showConfirmation(
   settings: Settings,
   operation: 'full' | 'diff'
 ): Promise<boolean> {
-  const sourcePath = resolvePath(settings.sourcePath);
-  const targetPaths = settings.targetPaths.map(resolvePath);
+  const sessionsPath = path.join(
+    process.cwd(),
+    'src',
+    'sessions',
+    'sessions.json'
+  );
+
+  let sessions: Session[] = [];
+  if (fs.existsSync(sessionsPath)) {
+    try {
+      sessions = JSON.parse(fs.readFileSync(sessionsPath, 'utf8'));
+    } catch {
+      // ignore
+    }
+  }
 
   console.log('\n' + '─'.repeat(60));
   console.log(
     `  Operation : ${operation === 'full' ? 'Full Backup' : 'Diff Backup'}`
   );
-  console.log(`  Source    : ${sourcePath}`);
-  console.log('  Targets   :');
-  targetPaths.forEach((t) => console.log(`              ${t}`));
+  console.log('  Sessions  :');
+  if (sessions.length > 0) {
+    sessions.forEach((s, i) => {
+      console.log(`    ${i + 1}. ${s.sourcePath} -> ${s.targetPath}`);
+    });
+  } else {
+    console.log('    (No sessions found or sessions.json is missing)');
+  }
+
   if (settings.excludeNames.length > 0) {
     console.log(`  Exclude names    : ${settings.excludeNames.join(', ')}`);
   }

@@ -67,15 +67,11 @@
     "CHANGELOG.md",
     "package.json",
     "pnpm-lock.yaml",
-    "pnpm-workspace.yaml",
     "README.md",
     "tsconfig.json",
     "vitest.config.ts"
   ],
   "license": "MIT",
-  "engines": {
-    "node": ""
-  },
   "dependencies": {
     "dir-compare": "^4.2.0",
     "dotenv": "^17.4.2",

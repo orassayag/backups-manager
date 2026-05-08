@@ -8,7 +8,7 @@ import { runDiffBackup } from './diff-backup/diffBackup';
 import { writeReport } from './reporter/reporter';
 import { BackupResult } from './types/types';
 
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
   // 1. Validation
   validateSettings(settings);
 
@@ -69,8 +69,11 @@ async function main(): Promise<void> {
   console.log(`📄 Report generated at: ${reportPath}`);
 }
 
-main().catch((err) => {
-  console.error('\n❌ A critical error occurred:');
-  console.error(err);
-  process.exit(1);
-});
+// Only run if this file is being executed directly (not imported in tests)
+if (process.env.NODE_ENV !== 'test') {
+  main().catch((err) => {
+    console.error('\n❌ A critical error occurred:');
+    console.error(err);
+    process.exit(1);
+  });
+}

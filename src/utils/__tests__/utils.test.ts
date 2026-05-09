@@ -119,6 +119,9 @@ describe('utils', () => {
     it('should recursively scan directory and return files', () => {
       const mockReaddirSync = vi.spyOn(fs, 'readdirSync');
       const mockStatSync = vi.spyOn(fs, 'statSync');
+      const mockRealpathSync = vi.spyOn(fs, 'realpathSync');
+
+      mockRealpathSync.mockImplementation((p: any) => p.toString());
 
       mockReaddirSync.mockImplementation((dirPath: any) => {
         if (dirPath.toString().endsWith('root')) {
@@ -127,11 +130,13 @@ describe('utils', () => {
               name: 'file1.txt',
               isFile: (): boolean => true,
               isDirectory: (): boolean => false,
+              isSymbolicLink: (): boolean => false,
             },
             {
               name: 'subdir',
               isFile: (): boolean => false,
               isDirectory: (): boolean => true,
+              isSymbolicLink: (): boolean => false,
             },
           ] as any;
         }
@@ -141,6 +146,7 @@ describe('utils', () => {
               name: 'file2.txt',
               isFile: (): boolean => true,
               isDirectory: (): boolean => false,
+              isSymbolicLink: (): boolean => false,
             },
           ] as any;
         }
@@ -154,16 +160,23 @@ describe('utils', () => {
       const results = scanDirectory('root', [], []);
 
       expect(results).toHaveLength(2);
-      expect(results[0].relativePath).toBe('file1.txt');
-      expect(results[1].relativePath).toBe('subdir/file2.txt');
+      // Results might be in different order due to stack
+      const file1 = results.find((r) => r.relativePath === 'file1.txt');
+      const file2 = results.find((r) => r.relativePath === 'subdir/file2.txt');
+      expect(file1).toBeDefined();
+      expect(file2).toBeDefined();
 
       mockReaddirSync.mockRestore();
       mockStatSync.mockRestore();
+      mockRealpathSync.mockRestore();
     });
 
     it('should respect exclusions during scan', () => {
       const mockReaddirSync = vi.spyOn(fs, 'readdirSync');
       const mockStatSync = vi.spyOn(fs, 'statSync');
+      const mockRealpathSync = vi.spyOn(fs, 'realpathSync');
+
+      mockRealpathSync.mockImplementation((p: any) => p.toString());
 
       mockReaddirSync.mockImplementation((_dirPath: any) => {
         return [
@@ -171,11 +184,13 @@ describe('utils', () => {
             name: 'file1.txt',
             isFile: (): boolean => true,
             isDirectory: (): boolean => false,
+            isSymbolicLink: (): boolean => false,
           },
           {
             name: 'node_modules',
             isFile: (): boolean => false,
             isDirectory: (): boolean => true,
+            isSymbolicLink: (): boolean => false,
           },
         ] as any;
       });
@@ -189,10 +204,15 @@ describe('utils', () => {
 
       mockReaddirSync.mockRestore();
       mockStatSync.mockRestore();
+      mockRealpathSync.mockRestore();
     });
 
     it('should track empty directories with size -1', () => {
       const mockReaddirSync = vi.spyOn(fs, 'readdirSync');
+      const mockRealpathSync = vi.spyOn(fs, 'realpathSync');
+
+      mockRealpathSync.mockImplementation((p: any) => p.toString());
+
       mockReaddirSync.mockImplementation((dirPath: any) => {
         if (dirPath.toString().endsWith('root')) {
           return [
@@ -200,6 +220,7 @@ describe('utils', () => {
               name: 'emptyDir',
               isFile: (): boolean => false,
               isDirectory: (): boolean => true,
+              isSymbolicLink: (): boolean => false,
             },
           ] as any;
         }
@@ -212,9 +233,11 @@ describe('utils', () => {
       expect(results[0].relativePath).toBe('emptyDir');
 
       mockReaddirSync.mockRestore();
+      mockRealpathSync.mockRestore();
     });
 
     it('should handle readdirSync error', () => {
+      vi.spyOn(fs, 'realpathSync').mockImplementation((p: any) => p.toString());
       vi.spyOn(fs, 'readdirSync').mockImplementation(() => {
         throw new Error('access denied');
       });
@@ -224,12 +247,14 @@ describe('utils', () => {
     });
 
     it('should handle statSync error', () => {
+      vi.spyOn(fs, 'realpathSync').mockImplementation((p: any) => p.toString());
       vi.spyOn(fs, 'readdirSync').mockImplementation(() => {
         return [
           {
             name: 'file1.txt',
             isFile: (): boolean => true,
             isDirectory: (): boolean => false,
+            isSymbolicLink: (): boolean => false,
           },
         ] as any;
       });

@@ -113,64 +113,109 @@ export interface ScannedFile {
 }
 
 /**
- * Recursively scan a directory and return all files, respecting exclusions.
+ * Iteratively scan a directory and return all files, respecting exclusions.
+ * Uses a stack to avoid RangeError on deep structures and detects symlink cycles.
  */
 export function scanDirectory(
   rootDir: string,
   excludeNames: string[],
-  excludePatterns: string[],
-  currentRel: string = ''
+  excludePatterns: string[]
 ): ScannedFile[] {
   const results: ScannedFile[] = [];
-  const absDir = path.join(rootDir, currentRel);
+  const stack: { relDir: string; absDir: string }[] = [
+    { relDir: '', absDir: rootDir },
+  ];
+  const visitedRealPaths = new Set<string>();
 
-  let entries: fs.Dirent[];
-  try {
-    entries = fs.readdirSync(absDir, { withFileTypes: true });
-  } catch {
-    return results;
-  }
+  while (stack.length > 0) {
+    const { relDir, absDir } = stack.pop()!;
 
-  for (const entry of entries) {
-    const relEntry = currentRel ? `${currentRel}/${entry.name}` : entry.name;
-    if (isExcluded(entry.name, relEntry, excludeNames, excludePatterns))
+    // Resolve real path to detect cycles (especially with symlinks/junctions)
+    let realPath: string;
+    try {
+      realPath = fs.realpathSync(absDir);
+      if (visitedRealPaths.has(realPath)) continue;
+      visitedRealPaths.add(realPath);
+    } catch {
+      // If we can't get realpath, just skip or proceed with caution? 
+      // Proceeding with caution (not adding to visited) might cause infinite loops if it's a cycle.
+      // Skipping is safer.
       continue;
+    }
 
-    const absEntry = path.join(absDir, entry.name);
-    if (entry.isDirectory()) {
-      const subFiles = scanDirectory(
-        rootDir,
-        excludeNames,
-        excludePatterns,
-        relEntry
-      );
-      if (subFiles.length > 0) {
-        results.push(...subFiles);
-      } else {
-        // If directory is empty (or all its contents are excluded), still track the directory itself
-        // so we can identify it for deletion if needed.
-        // We'll use a special size of -1 to indicate a directory.
-        results.push({
-          relativePath: relEntry,
-          absolutePath: absEntry,
-          size: -1,
-          mtime: 0,
-        });
-      }
-    } else if (entry.isFile()) {
-      try {
-        const stat = fs.statSync(absEntry);
-        results.push({
-          relativePath: relEntry,
-          absolutePath: absEntry,
-          size: stat.size,
-          mtime: stat.mtimeMs,
-        });
-      } catch {
-        // skip unreadable files
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(absDir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    if (entries.length === 0 && relDir) {
+      // Empty directory
+      results.push({
+        relativePath: relDir,
+        absolutePath: absDir,
+        size: -1,
+        mtime: 0,
+      });
+      continue;
+    }
+
+    let hasIncludedEntries = false;
+
+    for (const entry of entries) {
+      const relEntry = relDir ? `${relDir}/${entry.name}` : entry.name;
+      if (isExcluded(entry.name, relEntry, excludeNames, excludePatterns))
+        continue;
+
+      hasIncludedEntries = true;
+      const absEntry = path.join(absDir, entry.name);
+
+      if (entry.isDirectory()) {
+        stack.push({ relDir: relEntry, absDir: absEntry });
+      } else if (entry.isSymbolicLink()) {
+        // Check if the symlink points to a directory
+        try {
+          const stats = fs.statSync(absEntry);
+          if (stats.isDirectory()) {
+            stack.push({ relDir: relEntry, absDir: absEntry });
+          } else if (stats.isFile()) {
+            results.push({
+              relativePath: relEntry,
+              absolutePath: absEntry,
+              size: stats.size,
+              mtime: stats.mtimeMs,
+            });
+          }
+        } catch {
+          // Skip broken symlinks
+        }
+      } else if (entry.isFile()) {
+        try {
+          const stat = fs.statSync(absEntry);
+          results.push({
+            relativePath: relEntry,
+            absolutePath: absEntry,
+            size: stat.size,
+            mtime: stat.mtimeMs,
+          });
+        } catch {
+          // skip unreadable files
+        }
       }
     }
+
+    // If a directory was scanned but all its contents were excluded, track the directory itself
+    if (!hasIncludedEntries && relDir) {
+      results.push({
+        relativePath: relDir,
+        absolutePath: absDir,
+        size: -1,
+        mtime: 0,
+      });
+    }
   }
+
   return results;
 }
 

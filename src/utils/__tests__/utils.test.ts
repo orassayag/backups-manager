@@ -379,6 +379,10 @@ describe('utils', () => {
       expect(formatSize(0)).toBe('0 B');
     });
 
+    it('should return -- for negative sizes', () => {
+      expect(formatSize(-1)).toBe('--');
+    });
+
     it('should format KB correctly', () => {
       expect(formatSize(1024)).toBe('1.0 KB');
     });

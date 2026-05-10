@@ -25,7 +25,7 @@ describe('reporter', () => {
       sessionResults: [
         {
           session: { sourcePath: '/src', targetPath: '/dest' },
-          status: 'completed',
+          status: 'success',
           diffEntries: [
             { relativePath: 'file1.txt', size: 100, action: 'added' },
           ],
@@ -49,6 +49,34 @@ describe('reporter', () => {
     expect(content).toContain('Target: /dest');
     expect(content).toContain('file1.txt');
     expect(content).toContain('added');
+  });
+
+  it('should show -- in size column for deleted files', () => {
+    const mockResult: BackupResult = {
+      startTime: new Date(),
+      endTime: new Date(),
+      operation: 'diff',
+      sessionResults: [
+        {
+          session: { sourcePath: '/src', targetPath: '/dest' },
+          status: 'success',
+          diffEntries: [
+            { relativePath: 'deleted-file.txt', size: 1024, action: 'deleted' },
+          ],
+          failedFiles: [],
+        },
+      ],
+    };
+
+    const writeFileSyncSpy = vi.spyOn(fs, 'writeFileSync');
+    writeReport(mockResult);
+
+    const content = writeFileSyncSpy.mock.calls[0][1] as string;
+    expect(content).toContain('deleted-file.txt');
+    expect(content).toContain('--');
+    expect(content).toContain('deleted');
+    // Ensure it doesn't contain the formatted size from the mock (1024 B)
+    expect(content).not.toContain('1024 B');
   });
 
   it('should handle failed sessions in report', () => {

@@ -75,7 +75,9 @@ function buildSessionReport(sessionResult: SessionResult): string {
       const name = truncatePath(entry.relativePath, COL_PATH - 1).padEnd(
         COL_PATH
       );
-      const size = formatSize(entry.size).padEnd(COL_SIZE);
+      const sizeStr =
+        entry.action === 'deleted' ? '--' : formatSize(entry.size);
+      const size = sizeStr.padEnd(COL_SIZE);
       const action = entry.action.padEnd(COL_ACTION);
       lines.push(`${name}| ${size}| ${action}`);
     });

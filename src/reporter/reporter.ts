@@ -132,8 +132,19 @@ function buildReport(result: BackupResult): string {
 
 export function writeReport(result: BackupResult): string {
   const desktopPath = getDesktopPath();
-  const reportPath = path.join(desktopPath, REPORT_FILENAME);
+  const reportPath = path.resolve(path.join(desktopPath, REPORT_FILENAME));
   const content = buildReport(result);
-  fs.writeFileSync(reportPath, content, 'utf8');
-  return reportPath;
+
+  try {
+    // Ensure the directory exists (though it should be the Desktop)
+    if (!fs.existsSync(desktopPath)) {
+      fs.mkdirSync(desktopPath, { recursive: true });
+    }
+
+    // Write the report, overriding any existing file
+    fs.writeFileSync(reportPath, content, { encoding: 'utf8', flag: 'w' });
+    return reportPath;
+  } catch (err: any) {
+    throw new Error(`Failed to write report to ${reportPath}: ${err.message}`);
+  }
 }

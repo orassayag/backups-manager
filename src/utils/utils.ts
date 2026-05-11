@@ -22,13 +22,48 @@ export function resolvePath(p: string): string {
 
 /** Return the OS Desktop path (Windows / macOS / Linux). */
 export function getDesktopPath(): string {
+  const home = os.homedir() || '';
+
   if (process.platform === 'win32') {
+    // 1. Try common environment variables
     const userProfile =
       process.env.USERPROFILE ||
-      (process.env.HOMEDRIVE ?? '') + (process.env.HOMEPATH ?? '');
+      (process.env.HOMEDRIVE && process.env.HOMEPATH
+        ? path.join(process.env.HOMEDRIVE, process.env.HOMEPATH)
+        : '');
+
+    if (userProfile) {
+      const desktop = path.join(userProfile, 'Desktop');
+      // In test environments, fs.existsSync might be mocked or return false.
+      // We only skip if it explicitly exists.
+      if (fs.existsSync && fs.existsSync(desktop)) return desktop;
+    }
+
+    // 2. Try os.homedir()
+    if (home) {
+      const homeDesktop = path.join(home, 'Desktop');
+      if (fs.existsSync && fs.existsSync(homeDesktop)) return homeDesktop;
+
+      // 3. Check for OneDrive Desktop
+      const oneDriveDesktop = path.join(home, 'OneDrive', 'Desktop');
+      if (fs.existsSync && fs.existsSync(oneDriveDesktop))
+        return oneDriveDesktop;
+
+      const oneDrivePersonalDesktop = path.join(
+        home,
+        'OneDrive - Personal',
+        'Desktop'
+      );
+      if (fs.existsSync && fs.existsSync(oneDrivePersonalDesktop))
+        return oneDrivePersonalDesktop;
+    }
+
+    // Fallback for win32 if nothing found/exists
     if (userProfile) return path.join(userProfile, 'Desktop');
   }
-  return path.join(os.homedir(), 'Desktop');
+
+  // Fallback to ~/Desktop
+  return path.join(home, 'Desktop');
 }
 
 // ─── EXCLUSION HELPERS ────────────────────────────────────────────────────────
@@ -138,7 +173,7 @@ export function scanDirectory(
       if (visitedRealPaths.has(realPath)) continue;
       visitedRealPaths.add(realPath);
     } catch {
-      // If we can't get realpath, just skip or proceed with caution? 
+      // If we can't get realpath, just skip or proceed with caution?
       // Proceeding with caution (not adding to visited) might cause infinite loops if it's a cycle.
       // Skipping is safer.
       continue;

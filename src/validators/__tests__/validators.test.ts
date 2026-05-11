@@ -38,9 +38,9 @@ describe('validators', () => {
       automaticOperation: 'diff',
     };
 
-    expect(() => validateSettings(invalidSettings)).toThrow('process.exit');
-    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('excludeNames must be an array.'));
-    expect(processExitSpy).toHaveBeenCalledWith(1);
+    expect(() => validateSettings(invalidSettings)).toThrow(
+      'excludeNames must be an array.'
+    );
   });
 
   it('should fail if excludePatterns is not an array', () => {
@@ -51,9 +51,9 @@ describe('validators', () => {
       automaticOperation: 'diff',
     };
 
-    expect(() => validateSettings(invalidSettings)).toThrow('process.exit');
-    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('excludePatterns must be an array.'));
-    expect(processExitSpy).toHaveBeenCalledWith(1);
+    expect(() => validateSettings(invalidSettings)).toThrow(
+      'excludePatterns must be an array.'
+    );
   });
 
   it('should fail if automaticOperation is invalid when automaticMode is true', () => {
@@ -64,9 +64,9 @@ describe('validators', () => {
       automaticOperation: 'invalid',
     };
 
-    expect(() => validateSettings(invalidSettings)).toThrow('process.exit');
-    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('automaticOperation must be "full" or "diff"'));
-    expect(processExitSpy).toHaveBeenCalledWith(1);
+    expect(() => validateSettings(invalidSettings)).toThrow(
+      'automaticOperation must be "full" or "diff"'
+    );
   });
 
   it('should pass if automaticOperation is valid when automaticMode is true', () => {

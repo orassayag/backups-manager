@@ -28,11 +28,11 @@ export function validateSettings(settings: Settings): void {
     }
   }
 
-  // ─── Report & exit ────────────────────────────────────────────────────────
+  // ─── Report & throw ────────────────────────────────────────────────────────
   if (errors.length > 0) {
-    console.error('\n❌  Validation errors found in settings.ts:\n');
-    errors.forEach((e, i) => console.error(`  ${i + 1}. ${e}`));
-    console.error('\nPlease fix the above errors and try again.\n');
-    process.exit(1);
+    const errorMsg =
+      'Validation errors found in settings.ts:\n' +
+      errors.map((e, i) => `  ${i + 1}. ${e}`).join('\n');
+    throw new Error(errorMsg);
   }
 }

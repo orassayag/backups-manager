@@ -38,7 +38,9 @@ describe('reporter', () => {
 
     const reportPath = writeReport(mockResult);
 
-    expect(reportPath).toBe(path.join('/mock/desktop', 'BACKUP_REPORT.txt'));
+    expect(reportPath).toBe(
+      path.resolve(path.join('/mock/desktop', 'BACKUP_REPORT.txt'))
+    );
     expect(writeFileSyncSpy).toHaveBeenCalled();
 
     const content = writeFileSyncSpy.mock.calls[0][1] as string;

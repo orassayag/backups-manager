@@ -1,16 +1,35 @@
-# backups-manager
+# Backups Manager
 
 A cross-platform (Windows / macOS / Ubuntu) TypeScript tool that backs up files via full and differential modes. It ensures your data is synchronized across multiple targets while providing real-time progress tracking and detailed reporting.
 
+Built in April 2026, this project focuses on reliability, automation, and efficient storage management for developers and power users managing backups across different locations.
+
 ## Features
 
-- **Full backup** — copies every file from source to all targets (with exclusions applied).
-- **Diff backup** — copies only files that changed since the last run, using size and modification time comparison.
-- **Multi-session support** — configure multiple source-to-target backup tasks.
-- **Advanced exclusions** — skip specific files, folders, or patterns (e.g., `node_modules`, `*.log`).
-- **Live progress** — real-time spinner showing time elapsed, percentage, and current file.
-- **Detailed reporting** — generates a comprehensive `BACKUP_REPORT.txt` on the Desktop.
-- **Automation ready** — supports automatic mode for Task Scheduler or cron jobs.
+### Core Capabilities
+
+- **Multi-Mode Backups**: Support for both Full (complete copy) and Differential (changes only) backup strategies.
+- **Intelligent Synchronization**: Uses size and modification time comparison via `dir-compare` for efficient diffing.
+- **Advanced Exclusions**: Flexible filtering using exact names and glob patterns (e.g., `node_modules`, `*.log`, `.git`).
+- **Multi-Session Processing**: Batch process multiple source-to-target backup tasks in a single run.
+- **Real-Time Monitoring**: Live console progress with spinners, percentage indicators, and time elapsed tracking.
+- **Automated Reporting**: Generates comprehensive `BACKUP_REPORT.txt` on the Desktop with session summaries and error details.
+
+### Technical Excellence
+
+- **Type Safety**: Built with strict TypeScript for robust development and maintenance.
+- **Unit Testing**: Comprehensive test suite using Vitest for all core modules (diff, full, utils, validators).
+- **Zod Validation**: Robust settings and session validation to ensure configuration integrity.
+- **Clean Code Architecture**: Domain-driven organization with clear separation of concerns.
+- **Cross-Platform Compatibility**: Tested and verified on Windows, macOS, and Linux environments.
+
+### Developer Experience
+
+- **Interactive CLI**: User-friendly menu system built with Inquirer for manual operations.
+- **Automation Ready**: CLI flags (`--auto`, `--operation`) for easy integration with Task Scheduler or Cron jobs.
+- **Watch Mode**: Live development environment with `tsx watch` for rapid iteration.
+- **Visual Testing**: Support for Vitest UI to visually inspect test results and coverage.
+- **Pre-configured Environment**: Comprehensive `.vscode` settings and Prettier/ESLint configurations included.
 
 ## Getting Started
 
@@ -40,9 +59,9 @@ npm install
 4. Adjust settings:
    Edit `src/settings/settings.ts` to configure exclusions and automation.
 
-### Quick Start
+## Usage
 
-#### Test Mode (Development)
+### Interactive Menu (Recommended)
 
 To run the tool interactively and select your backup mode:
 
@@ -50,47 +69,68 @@ To run the tool interactively and select your backup mode:
 npm start
 ```
 
-#### Production Mode
+This will display the main menu where you can choose between Full Backup, Differential Backup, or Clearing the Cache.
 
-To run the tool automatically (e.g., for scheduled tasks):
+### Automatic Execution
+
+For scheduled tasks or batch scripts, use the automatic mode:
 
 ```bash
+# Run with default settings from settings.ts
 npm run sync
+
+# Force a specific operation via CLI
+npm start -- --auto --operation=full
+npm start -- --auto --operation=diff
 ```
 
-Or use CLI arguments for specific operations:
+### Development Commands
 
 ```bash
-npm start -- --auto --operation=full
+npm run dev          # Watch mode for development
+npm test             # Run all tests
+npm run test:ui      # Open Vitest UI
+npm run lint         # Check for linting issues
 ```
 
-## Configuration
+## Best Practices
 
-### Core Settings
+- **Initial Baseline**: Always perform a **Full Backup** for the first run to establish a complete baseline.
+- **Exclusion Management**: Regularly review `excludePatterns` in `settings.ts` to skip unnecessary folders like `node_modules` or `.cache`.
+- **Report Monitoring**: Check the `BACKUP_REPORT.txt` on your Desktop after automated runs to verify success.
+- **Cache Maintenance**: Use the "Clear Cache" option if you encounter unexpected synchronization behavior.
+- **Path Lengths**: On Windows, keep target paths relatively short or enable "Long Paths" in the OS settings.
 
-Edit `src/settings/settings.ts` to control the global behavior:
+## Architecture Principles
 
-- `excludeNames`: Exact folder/file names to skip.
-- `excludePatterns`: Glob patterns for flexible exclusions.
-- `automaticMode`: `true` to skip the menu and run immediately.
-- `automaticOperation`: Default operation (`'full'` or `'diff'`) for automatic mode.
+- **Separation of Concerns**: Business logic (backup engines) is decoupled from the UI (menu/progress) and reporting.
+- **Immutability**: Configuration and settings are treated as immutable during the execution flow.
+- **Defensive Programming**: Extensive validation of user input and environment state before execution.
+- **Stateless Execution**: Each backup session is independent, ensuring failures in one don't corrupt others.
+- **Observability**: Every action is logged and tracked for both real-time display and post-run analysis.
 
-### Search Configuration
+## Directory Structure
 
-Configure your backup "search" paths in `src/sessions/sessions.json`:
-
-```json
-[
-  {
-    "sourcePath": "C:\\Path\\To\\Source",
-    "targetPath": "D:\\Path\\To\\Target"
-  }
-]
+```
+src/
+├── diff-backup/      # Differential backup engine (changes only)
+├── full-backup/      # Full backup engine (complete copy)
+├── menu/             # Interactive CLI menu (Inquirer)
+├── progress/         # Progress bars and spinners (Ora)
+├── reporter/         # Report generation logic (Desktop output)
+├── sessions/         # Backup task configurations (JSON)
+├── settings/         # Global application settings
+├── types/            # Centralized TypeScript definitions
+├── utils/            # File system and path helpers
+└── validators/       # Configuration and path validation
 ```
 
-### Filtering
+## Design Patterns
 
-Exclusions are handled via `excludeNames` and `excludePatterns` in `settings.ts`. These filters are applied recursively during the directory scan to skip unwanted data like build artifacts or temporary files.
+- **Strategy Pattern**: Different backup engines (Full vs. Diff) implemented as interchangeable strategies.
+- **Singleton Pattern**: Settings and configurations managed as application-wide singletons.
+- **Observer Pattern**: Progress tracking system observing the backup engines for real-time updates.
+- **Command Pattern**: CLI arguments mapped to specific internal operations.
 
 ## Available Scripts
 
@@ -102,132 +142,34 @@ npm run sync           # Run automatic differential backup
 npm run build          # Compile TypeScript to JavaScript
 ```
 
-### Testing Scripts
+### Development & Testing
 
 ```bash
+npm run dev            # Watch mode for development
 npm test               # Run all tests using Vitest
 npm run test:watch     # Run tests in watch mode
 npm run test:ui        # Open Vitest UI for visual testing
-```
-
-## Project Structure
-
-```
-backups-manager/
-├── src/
-│   ├── index.ts              # Entry point & CLI logic
-│   ├── sessions/             # Session configurations (sessions.json)
-│   ├── settings/             # Global settings (settings.ts)
-│   ├── diff-backup/          # Differential backup implementation
-│   ├── full-backup/          # Full backup implementation
-│   ├── menu/                 # Inquirer-based interactive menu
-│   ├── progress/             # Ora-based progress tracking
-│   ├── reporter/             # BACKUP_REPORT.txt generator
-│   ├── types/                # Shared TypeScript types
-│   ├── utils/                # FS and path utilities
-│   └── validators/           # Settings validation
-├── automatic-backup.bat      # Windows automation script
-└── package.json              # Project dependencies
-```
-
-## How It Works
-
-```mermaid
-graph TD
-    Start([Start Application]) --> Validate[Validate Settings]
-    Validate --> ModeCheck{Automatic Mode?}
-
-    ModeCheck -- No --> Menu[Show Main Menu]
-    Menu --> Choice{User Choice}
-    Choice -- Full --> FullLogic[Full Backup Logic]
-    Choice -- Diff --> DiffLogic[Diff Backup Logic]
-    Choice -- Clear Cache --> ClearCache[Clear .cache Folder]
-    Choice -- Exit --> End([End])
-
-    ModeCheck -- Yes --> OpCheck{Operation?}
-    OpCheck -- Full --> FullLogic
-    OpCheck -- Diff --> DiffLogic
-
-    FullLogic --> SessionLoopFull[Loop Sessions]
-    SessionLoopFull --> ScanFull[Scan Source]
-    ScanFull --> CopyFiles[Copy Files to Target]
-    CopyFiles --> ReportGen[Generate Report]
-
-    DiffLogic --> SessionLoopDiff[Loop Sessions]
-    SessionLoopDiff --> CompareDiff[Compare Source vs Target]
-    CompareDiff --> SyncChanges[Sync Changes]
-    SyncChanges --> ReportGen
-
-    ClearCache --> End
-    ReportGen --> End
-```
-
-## Architecture Flow
-
-1. **Validation**: Checks `settings.ts` for consistency.
-2. **Menu/Mode Selection**: Determines whether to run interactively or automatically.
-3. **Session Processing**: Reads `sessions.json` and iterates through each backup task.
-4. **Scan/Compare**:
-   - **Full**: Scans source recursively with exclusions.
-   - **Diff**: Compares source and target using `dir-compare` (size + mtime).
-5. **Execution**: Copies files, creates directories, and deletes obsolete files (in diff mode).
-6. **Progress Tracking**: Updates the console with real-time stats.
-7. **Reporting**: Writes the final outcome to a text file on the Desktop.
-
-## Email Validation Features
-
-_(Repurposed as Smart Comparison Features)_
-
-- **Size Comparison**: Detects changes if file size differs.
-- **Modification Time (mtime)**: Detects changes if the file was recently saved.
-- **Target Sync**: Identifies files in the target that no longer exist in the source for deletion.
-- **Exclusion Mapping**: Efficiently skips paths matching exclusion rules during the scan.
-
-## Console Status Example
-
-```
-Time: 00:01:23 | 45.2% | Copying: C:\Source\file.txt to D:\Target\file.txt
-```
-
-## Output Files
-
-The tool generates a report on your **Desktop**:
-
-- `BACKUP_REPORT.txt`: Contains session details, status, duration, and a list of failed files. For differential backups, it also includes a table of added, updated, and deleted files.
-
-## Development
-
-### Running Tests
-
-```bash
-npm test
-```
-
-### Development Mode
-
-Use the following command to watch for changes during development:
-
-```bash
-npm run dev
+npm run lint           # Check for linting issues
+npm run format         # Format code with Prettier
 ```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on:
 
-## Built With
+- Reporting issues
+- Submitting pull requests
+- Code style standards
+- Testing requirements
+- Documentation expectations
 
-- [TypeScript](https://www.typescriptlang.org/) - Programming language
-- [Node.js](https://nodejs.org/) - Runtime environment
-- [Ora](https://github.com/sindresorhus/ora) - Elegant terminal spinner
-- [Inquirer](https://github.com/SBoudrias/Inquirer.js) - Interactive CLI user interface
-- [dir-compare](https://github.com/glenn-murray/dir-compare) - Directory comparison utility
+## Support
 
-## Acknowledgments
+For questions, issues, or contributions:
 
-- Built for efficient and reliable data synchronization.
-- Uses `dir-compare` for high-performance directory diffing.
-- Designed with cross-platform compatibility in mind.
+- **GitHub Issues**: [https://github.com/orassayag/backups-manager/issues](https://github.com/orassayag/backups-manager/issues)
+- **Author**: Or Assayag <orassayag@gmail.com>
+- **LinkedIn**: [orassayag](https://linkedin.com/in/orassayag)
 
 ## License
 
@@ -247,3 +189,7 @@ This application has an MIT license - see the [LICENSE](LICENSE) file for detail
 - Respects robots.txt and implements rate limiting
 - Uses user-agent rotation to avoid detection
 - Implements polite crawling practices
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -1,10 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { showMainMenu, showConfirmation } from '../menu.js';
-import inquirer from 'inquirer';
+import pkg from 'enquirer';
+const { Select } = pkg as any;
 import * as fs from 'fs';
 import { Settings } from '../../settings/settings.js';
 
-vi.mock('inquirer');
+vi.mock('enquirer', () => {
+  const Select = vi.fn().mockImplementation(function (this: any) {
+    this.run = vi.fn().mockResolvedValue('full');
+  });
+  return {
+    default: { Select },
+    Select,
+  };
+});
 vi.mock('fs');
 
 describe('menu', () => {
@@ -13,12 +22,20 @@ describe('menu', () => {
   });
 
   it('should show main menu and return choice', async () => {
-    vi.spyOn(inquirer, 'prompt').mockResolvedValue({ operation: 'full' });
-
     const choice = await showMainMenu();
 
     expect(choice).toBe('full');
-    expect(inquirer.prompt).toHaveBeenCalled();
+    expect(Select).toHaveBeenCalled();
+  });
+
+  it('should return "exit" if main menu is cancelled', async () => {
+    vi.mocked(Select).mockImplementationOnce(function (this: any) {
+      this.run = vi.fn().mockRejectedValue(new Error('cancelled'));
+    });
+
+    const choice = await showMainMenu();
+
+    expect(choice).toBe('exit');
   });
 
   it('should show confirmation and return true on "y"', async () => {

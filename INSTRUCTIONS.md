@@ -1,247 +1,156 @@
-# Instructions
+# Setup and Usage Instructions
 
-## Setup Instructions
+## Table of Contents
 
-1. Open the project in your IDE (VSCode recommended)
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Configure your backup sessions in `src/sessions/sessions.json`.
+1. [Prerequisites](#prerequisites)
+2. [Initial Setup](#initial-setup)
+3. [Configuration Guide](#configuration-guide)
+4. [Available Commands](#available-commands)
+5. [Backup Operations](#backup-operations)
+6. [Troubleshooting](#troubleshooting)
+7. [Best Practices](#best-practices)
+8. [Documentation](#documentation)
+9. [External Resources](#external-resources)
+10. [Author](#author)
 
 ## Prerequisites
 
-- **Node.js**: Version 18 or higher.
-- **npm** or **pnpm**: For managing packages.
-- **Write Access**: Ensure you have permission to write to the target backup directories and your Desktop (for reports).
+### System Requirements
 
-## Configuration
+- **Node.js**: Version 18 or higher
+- **Package Manager**: npm or pnpm
+- **Operating System**: Windows, macOS, or Linux
+- **Disk Space**: Sufficient space on target drives for backups
+- **Permissions**: Read access to source paths and write access to target paths and Desktop
 
-### Main Settings
+## Initial Setup
 
-Open `src/settings/settings.ts` to configure the global behavior of the application.
+### 1. Install Dependencies
 
-#### Production vs Development Mode
+Clone the repository and install the required packages:
 
-- **Interactive Mode**: Run `npm start` to manually select backup operations and see confirmations.
-- **Automatic Mode**: Set `automaticMode: true` in `settings.ts` to skip all prompts. This is ideal for scheduled tasks.
-
-#### Goal Settings
-
-*(Repurposed for Backup Operations)*
-- **Full Backup**: Copies every file from source to target. Best for initial backups.
-- **Differential Backup**: Syncs only changed files. Best for daily use.
-
-#### Method Settings
-
-*(Repurposed for Exclusions)*
-- `excludeNames`: Use this to skip specific folders like `node_modules` or `.git`.
-- `excludePatterns`: Use glob patterns to skip file types like `*.log` or `**/.DS_Store`.
-
-#### MongoDB Settings
-
-*(Repurposed for Session Paths)*
-- `sourcePath`: The directory you want to back up.
-- `targetPath`: The destination where the backup will be stored.
-- *Note: These are configured per session in `src/sessions/sessions.json`.*
-
-#### Search Settings
-
-*(Repurposed for CLI Overrides)*
-- `--auto`: Force automatic mode via command line.
-- `--operation=full` or `--operation=diff`: Force a specific operation from the command line.
-
-#### Process Limits
-
-- **Windows Path Lengths**: Windows has a default path limit of 260 characters. If your backup source has very deep folder structures, ensure you enable "Long Paths" in Windows settings or keep target paths short.
-
-#### Logging Options
-
-- **Backup Report**: A `BACKUP_REPORT.txt` is always generated on your Desktop after each session, detailing the success, failures, and file changes.
-
-### Search Engines Configuration
-
-*(Repurposed for Target Destinations)*
-- You can define multiple target paths for a single source by creating multiple sessions in `sessions.json` with the same `sourcePath` but different `targetPath` values.
-
-### Search Keys Configuration
-
-*(Repurposed for Source Directories)*
-- Ensure your `sourcePath` in `sessions.json` points to the root directory you wish to back up. All subdirectories will be included unless excluded.
-
-### Filter Configurations
-
-#### Email Address Filters
-
-*(Repurposed for Folder Exclusions)*
-- Use the `excludeNames` array in `settings.ts` to skip entire directories by name.
-
-#### Link Filters
-
-*(Repurposed for File Pattern Exclusions)*
-- Use the `excludePatterns` array in `settings.ts` to skip files matching specific patterns across all directories.
-
-#### File Extension Filters
-
-- You can skip specific file extensions by adding them to `excludePatterns`, for example: `['**/*.tmp', '**/*.bak']`.
-
-### Email Domain Configurations
-
-*(Repurposed for Cache Management)*
-- The tool uses a `.cache` directory to speed up differential backups. If you experience issues with sync accuracy, you can use the "Clear Cache" option in the interactive menu.
-
-## Running Scripts
-
-### Main Crawler (with Monitor)
-
-*(Repurposed for Interactive Menu)*
-Starts the tool with an interactive menu to choose your backup mode:
 ```bash
+git clone https://github.com/orassayag/backups-manager.git
+cd backups-manager
+npm install
+```
+
+### 2. Verify Installation
+
+Run the build script to ensure everything is compiled correctly:
+
+```bash
+npm run build
+```
+
+## Configuration Guide
+
+### Session Configuration
+
+Backup tasks are defined in `src/sessions/sessions.json`. Each session requires a `sourcePath` and a `targetPath`:
+
+```json
+[
+  {
+    "sourcePath": "C:\\Users\\User\\Documents",
+    "targetPath": "D:\\Backups\\Documents"
+  }
+]
+```
+
+### Global Settings
+
+Open `src/settings/settings.ts` to configure global behavior:
+
+- **Exclusions**: Define `excludeNames` and `excludePatterns` to skip files/folders.
+- **Automation**: Set `automaticMode` and `automaticOperation` for hands-off execution.
+- **Paths**: Ensure `reportPath` (defaulting to Desktop) is correct for your OS.
+
+## Available Commands
+
+### Development Commands
+
+```bash
+# Linting and Formatting
+npm run lint         # Check code style
+npm run format       # Fix formatting issues
+
+# Building and Development
+npm run build        # Compile TypeScript
+npm run dev          # Start with auto-reload
+
+# Testing
+npm test             # Run all tests
+npm run test:watch   # Watch mode for tests
+npm run test:ui      # Visual test runner
+```
+
+### Running Scripts
+
+```bash
+# Interactive Menu
 npm start
-```
 
-### Backup
-
-*(Repurposed for Automatic Differential Backup)*
-Runs a differential backup automatically based on your `settings.ts` and `sessions.json`:
-```bash
+# Automatic Differential Backup
 npm run sync
+
+# CLI Argument Overrides
+npm start -- --auto --operation=full
+npm start -- --auto --operation=diff
 ```
 
-### Domain Counter
+## Backup Operations
 
-*(Repurposed for Cache Clearing)*
-To clear the comparison cache manually:
-1. Run `npm start`.
-2. Select **Clear Cache** from the menu.
+### Full Backup
 
-### Tests
+Copies every file from the source to the target, regardless of whether it exists or has changed. Recommended for the first run of any new session.
 
-#### Validate Single Email
+### Differential Backup
 
-*(Repurposed for Unit Testing)*
-Runs the project's test suite to ensure everything is functioning correctly:
-```bash
-npm test
-```
+Uses `dir-compare` to identify changed, new, or deleted files. Only synchronizes the differences, making it significantly faster for daily use.
 
-#### Validate Multiple Emails
+### Cache Management
 
-Runs tests in watch mode for development:
-```bash
-npm run test:watch
-```
+The tool maintains a `.cache` directory to optimize comparison speed. If you encounter sync issues, use the "Clear Cache" option in the interactive menu.
 
-#### Debug Email Validation
+## Extending the Application
 
-Opens the Vitest UI for a more detailed look at test results:
-```bash
-npm run test:ui
-```
+To add new features or modify existing ones:
 
-#### Test Typos
+1. **New Validators**: Add logic to `src/validators/validators.ts`.
+2. **Custom Utilities**: Place helper functions in `src/utils/utils.ts`.
+3. **New Backup Logic**: Create a new module in `src/` and integrate it into `src/index.ts`.
+4. **Types**: Update `src/types/types.ts` when modifying data structures.
 
-*(Reserved for future use)*
+## Best Practices
 
-#### Test Link Crawling
+- **Test Runs**: Before backing up large datasets, run a test with a small directory to verify your configuration.
+- **Regular Backups**: Use Windows Task Scheduler or Cron to run `npm run sync` daily.
+- **Log Review**: Periodically check the generated reports to ensure no files are failing to copy.
+- **Security**: Be cautious when backing up sensitive data to external or network drives.
 
-*(Reserved for future use)*
+## Documentation
 
-#### Test Session Links
+- **README.md**: Overview and high-level architecture.
+- **CONTRIBUTING.md**: Guidelines for contributing to the project.
+- **CHANGELOG.md**: History of changes and versions.
 
-*(Reserved for future use)*
+## External Resources
 
-#### Email Generator Test
-
-*(Reserved for future use)*
-
-#### Test Cases
-
-*(Reserved for future use)*
-
-#### Sandbox
-
-You can use `src/index.ts` as a starting point for any custom backup logic adjustments.
-
-## Quick Start Guide
-
-### For Testing (Development Mode)
-
-1. Ensure your `sessions.json` points to a small test directory.
-2. Run `npm start`.
-3. Select **Full Backup** to see the initial copy process.
-4. Modify a file in the source and run `npm start` again, selecting **Differential Backup**.
-
-### For Production Crawling
-
-*(Repurposed for Production Backups)*
-1. Configure your real source and target paths in `sessions.json`.
-2. Set `automaticMode: true` in `settings.ts`.
-3. Set up a Windows Task Scheduler task to run `automatic-backup.bat` daily.
-4. Check your Desktop for the `BACKUP_REPORT.txt` to verify success.
-
-## File Structure
-
-### Source Files (src/)
-
-- `index.ts`: Main entry point and CLI orchestration.
-- `sessions/sessions.json`: Your backup task definitions.
-- `settings/settings.ts`: Global exclusion and mode settings.
-- `diff-backup/`: Logic for comparing and syncing changes.
-- `full-backup/`: Logic for complete directory replication.
-- `utils/`: Common helpers for file operations and path resolving.
-
-### Output Files (dist/)
-
-- `BACKUP_REPORT.txt`: Found on your Desktop after execution.
-- `.cache/`: Internal directory used for differential comparison state.
-
-## Understanding the Console Status Line
-
-When running, the tool displays a live progress line:
-- **Time**: Time elapsed since the start of the current session.
-- **Percentage**: Progress based on the total number of files to process.
-- **Current Action**: Shows whether it is scanning, copying, or deleting a specific file.
-
-## Troubleshooting
-
-### Application Won't Start
-
-- Ensure you have run `npm install`.
-- Verify that your `sessions.json` and `settings.ts` have no syntax errors.
-- Ensure you are using Node.js v18 or newer.
-
-### No Email Addresses Being Found
-
-*(Repurposed for Backup Issues)*
-- Check if the `sourcePath` exists and contains files.
-- Verify that your `excludeNames` or `excludePatterns` aren't skipping all your files.
-- Check the `BACKUP_REPORT.txt` for specific error messages.
-
-### Puppeteer Errors
-
-*(Repurposed for File System Errors)*
-- Ensure the target drive has enough free space.
-- Verify that no files in the source or target are currently locked by another application.
-
-### MongoDB Connection Errors
-
-*(Repurposed for Path Errors)*
-- Ensure all paths in `sessions.json` are absolute.
-- On Windows, use double backslashes (`\\`) in JSON for paths.
-
-### Application Keeps Restarting
-
-- If running via a custom monitor, check the exit codes in the console.
-- Ensure the `BACKUP_REPORT.txt` is not being blocked by another process.
-
-## Important Notes
-
-- **Full vs Diff**: Always run a **Full Backup** at least once for a new target to ensure a consistent baseline.
-- **Exclusions**: Be careful with `excludePatterns`; a pattern like `*` will skip all files.
-- **Automation**: When using Task Scheduler, ensure the task is set to "Start in" the project root directory.
+- [Node.js Documentation](https://nodejs.org/docs)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs)
+- [Vitest Documentation](https://vitest.dev/guide/)
+- [dir-compare GitHub](https://github.com/glenn-murray/dir-compare)
 
 ## Author
 
-- **Or Assayag** - [orassayag](https://github.com/orassayag)
-- Or Assayag <orassayag@gmail.com>
+**Or Assayag**
+
+- Email: orassayag@gmail.com
+- GitHub: [@orassayag](https://github.com/orassayag)
+- StackOverflow: [or-assayag](https://stackoverflow.com/users/4442606/or-assayag)
+- LinkedIn: [orassayag](https://linkedin.com/in/orassayag)
+
+## Last Updated
+
+2026-05-13

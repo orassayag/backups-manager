@@ -8,6 +8,21 @@ import { runDiffBackup } from './diff-backup/diffBackup';
 import { writeReport } from './reporter/reporter';
 import { BackupResult } from './types/types';
 
+// Global signal handler for clean exit on Ctrl+C
+process.on('SIGINT', () => {
+  console.log('\nExiting...');
+  process.exit(0);
+});
+
+// Safety net for readline-related errors that occur during exit
+process.on('uncaughtException', (err: any) => {
+  if (err.code === 'ERR_USE_AFTER_CLOSE') {
+    process.exit(0);
+  }
+  console.error('\n❌ Uncaught Exception:', err);
+  process.exit(1);
+});
+
 export async function main(): Promise<void> {
   const startTime = new Date();
   let operation: MenuChoice = 'diff'; // Default
@@ -67,6 +82,17 @@ export async function main(): Promise<void> {
   } catch (err: any) {
     // If it's a deliberate exit (like from process.exit mock in tests), re-throw it
     if (err.message === 'process.exit') throw err;
+
+    // Handle prompt cancellation gracefully
+    if (
+      err.name === 'ExitPromptError' ||
+      err.message?.includes('force closed') ||
+      err.code === 'ERR_USE_AFTER_CLOSE' ||
+      err === ''
+    ) {
+      console.log('\nExiting...');
+      process.exit(0);
+    }
 
     // Create a failed result if anything crashed
     result = {

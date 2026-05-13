@@ -16,7 +16,7 @@ Plan.
 2. Diff backup
 3. Exit
 "
-Take the dropdown logic and package the same as we have in the "C:\Or\web\projects\events-and-people-syncer" project ("@types/inquirer" + "inquirer").
+Take the dropdown logic and package the same as we have in the "C:\Or\web\projects\events-and-people-syncer" project ("enquirer").
 
 7. When selecting "Full backup" we will display the source path and the target path and the exclude and filter patterns and wait for user to confirm (y/n). If selected n it will exit. If selected y, it will do a full backup, with the exclude and filters applied. If some file failed to be copied (timeout or any other error) it will keep the path the file details and continue to the next one. In the end we will print a report into the desktop called "BACKUP_REPORT.txt" with the date and the time (jerusalem time - pattern of dd/MM/yyyy hh:mm:ss | Example: 13/05/2026 22:34:34) and if exists failed files they will be included in the report. Other than that - in the full backup no need to mention anything else.
 

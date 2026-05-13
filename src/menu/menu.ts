@@ -1,9 +1,10 @@
 /**
  * menu.ts
- * Interactive CLI menu using inquirer.
+ * Interactive CLI menu using enquirer.
  */
 
-import inquirer from 'inquirer';
+import pkg from 'enquirer';
+const { Select } = pkg as any;
 import * as fs from 'fs';
 import * as path from 'path';
 import { Settings } from '../settings/settings';
@@ -13,20 +14,23 @@ export type MenuChoice = 'full' | 'diff' | 'clear-cache' | 'exit';
 
 /** Display the main operation menu and return the user's choice. */
 export async function showMainMenu(): Promise<MenuChoice> {
-  const { operation } = await inquirer.prompt<{ operation: MenuChoice }>([
-    {
-      type: 'list',
-      name: 'operation',
-      message: 'Select an operation:',
-      choices: [
-        { name: '1. Full backup', value: 'full' },
-        { name: '2. Diff backup', value: 'diff' },
-        { name: '3. Clear cache', value: 'clear-cache' },
-        { name: '4. Exit', value: 'exit' },
-      ],
-    },
-  ]);
-  return operation;
+  const prompt = new Select({
+    name: 'operation',
+    message: 'Select an operation:',
+    choices: [
+      { name: 'full', message: '1. Full backup' },
+      { name: 'diff', message: '2. Diff backup' },
+      { name: 'clear-cache', message: '3. Clear cache' },
+      { name: 'exit', message: '4. Exit' },
+    ],
+  });
+
+  try {
+    return (await prompt.run()) as MenuChoice;
+  } catch {
+    // Handle prompt cancellation
+    return 'exit';
+  }
 }
 
 /**

@@ -3,7 +3,7 @@
  * Shared TypeScript interfaces and types used throughout backups-manager.
  */
 
-export type DiffAction = 'added' | 'updated' | 'deleted';
+type DiffAction = 'added' | 'updated' | 'deleted';
 
 export interface DiffEntry {
   relativePath: string;

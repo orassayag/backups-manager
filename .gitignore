@@ -3,7 +3,6 @@ dist
 out
 build
 node_modules
-src/sessions
 
 # Logs
 *.log*
@@ -25,7 +24,13 @@ api-stats.json
 # Misc
 .DS_Store
 .pnpm-store
-.cache/
 
 # Tests
 coverage
+
+# Others:
+# Distribution
+src/sessions
+
+# Misc
+.cache/

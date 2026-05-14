@@ -23,6 +23,7 @@ const settings: Settings = {
     'node_modules',
     '.git',
     'dist',
+    'coverage',
     'build',
     '.next',
     '.nuxt',

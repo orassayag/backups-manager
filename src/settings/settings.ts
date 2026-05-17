@@ -22,8 +22,8 @@ const settings: Settings = {
   excludeNames: [
     'node_modules',
     '.git',
-    'dist',
     'coverage',
+    'dist',
     'build',
     '.next',
     '.nuxt',

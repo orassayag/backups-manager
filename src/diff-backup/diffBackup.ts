@@ -15,6 +15,7 @@ import {
   copyFile,
 } from '../utils/utils';
 import { ProgressTracker } from '../progress/progress';
+import { logger } from '../logging';
 
 const CACHE_DIR = path.join(process.cwd(), '.cache');
 
@@ -30,6 +31,7 @@ async function processSession(
   settings: Settings,
   progress: ProgressTracker
 ): Promise<SessionResult> {
+  logger.debug('Processing session (Diff)', { session });
   const failedFiles: FailedFile[] = [];
   const diffEntries: DiffEntry[] = [];
 
@@ -38,6 +40,7 @@ async function processSession(
 
   // 1. Validation
   if (!session.sourcePath || !session.targetPath) {
+    logger.warn('Skipping session: Source or target path missing');
     return {
       session,
       status: 'skipped',
@@ -48,6 +51,7 @@ async function processSession(
   }
 
   if (!fs.existsSync(sourcePath)) {
+    logger.warn('Skipping session: Source path does not exist', { sourcePath });
     return {
       session,
       status: 'skipped',
@@ -215,6 +219,7 @@ async function processSession(
 }
 
 export async function runDiffBackup(settings: Settings): Promise<BackupResult> {
+  logger.info('Running Differential Backup');
   const startTime = new Date();
   const sessionResults: SessionResult[] = [];
 
@@ -226,7 +231,9 @@ export async function runDiffBackup(settings: Settings): Promise<BackupResult> {
   );
 
   // 1. Check for sessions file
+  logger.debug('Loading sessions', { sessionsPath });
   if (!fs.existsSync(sessionsPath)) {
+    logger.error('Sessions file not found', undefined, { sessionsPath });
     throw new Error(`Sessions file not found at ${sessionsPath}`);
   }
 
@@ -234,15 +241,19 @@ export async function runDiffBackup(settings: Settings): Promise<BackupResult> {
   try {
     const sessionsContent = fs.readFileSync(sessionsPath, 'utf8');
     sessions = JSON.parse(sessionsContent);
+    logger.debug('Sessions loaded', { count: sessions.length });
   } catch (err: any) {
+    logger.error('Error reading sessions.json', err);
     throw new Error(`Error reading sessions.json: ${err.message}`);
   }
 
   if (!sessions || sessions.length === 0) {
+    logger.warn('No sessions found in sessions.json');
     throw new Error('No sessions found in sessions.json');
   }
 
   if (!fs.existsSync(CACHE_DIR)) {
+    logger.debug('Creating cache directory', { CACHE_DIR });
     fs.mkdirSync(CACHE_DIR, { recursive: true });
   }
 

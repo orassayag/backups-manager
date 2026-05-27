@@ -14,6 +14,7 @@ import {
 } from '../types/types';
 import { scanDirectory, resolvePath, copyFile } from '../utils/utils';
 import { ProgressTracker } from '../progress/progress';
+import { logger } from '../logging';
 
 /**
  * Processes a single session for full backup.
@@ -23,12 +24,14 @@ async function processSession(
   settings: Settings,
   progress: ProgressTracker
 ): Promise<SessionResult> {
+  logger.debug('Processing session (Full)', { session });
   const failedFiles: FailedFile[] = [];
   const sourcePath = resolvePath(session.sourcePath);
   const targetPath = resolvePath(session.targetPath);
 
   // 1. Validation
   if (!session.sourcePath || !session.targetPath) {
+    logger.warn('Skipping session: Source or target path missing');
     return {
       session,
       status: 'skipped',
@@ -39,6 +42,7 @@ async function processSession(
   }
 
   if (!fs.existsSync(sourcePath)) {
+    logger.warn('Skipping session: Source path does not exist', { sourcePath });
     return {
       session,
       status: 'skipped',
@@ -110,6 +114,7 @@ async function processSession(
 }
 
 export async function runFullBackup(settings: Settings): Promise<BackupResult> {
+  logger.info('Running Full Backup');
   const startTime = new Date();
   const sessionResults: SessionResult[] = [];
 
@@ -121,7 +126,9 @@ export async function runFullBackup(settings: Settings): Promise<BackupResult> {
   );
 
   // 1. Check for sessions file
+  logger.debug('Loading sessions', { sessionsPath });
   if (!fs.existsSync(sessionsPath)) {
+    logger.error('Sessions file not found', undefined, { sessionsPath });
     throw new Error(`Sessions file not found at ${sessionsPath}`);
   }
 
@@ -129,11 +136,14 @@ export async function runFullBackup(settings: Settings): Promise<BackupResult> {
   try {
     const sessionsContent = fs.readFileSync(sessionsPath, 'utf8');
     sessions = JSON.parse(sessionsContent);
+    logger.debug('Sessions loaded', { count: sessions.length });
   } catch (err: any) {
+    logger.error('Error reading sessions.json', err);
     throw new Error(`Error reading sessions.json: ${err.message}`);
   }
 
   if (!sessions || sessions.length === 0) {
+    logger.warn('No sessions found in sessions.json');
     throw new Error('No sessions found in sessions.json');
   }
 

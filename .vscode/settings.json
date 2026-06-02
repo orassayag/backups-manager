@@ -1,5 +1,12 @@
 {
-  "cSpell.words": ["Assayag", "msvc", "orassayag", "syncer"],
+  "cSpell.words": [
+    "Assayag",
+    "maxtimeout",
+    "mintimeout",
+    "msvc",
+    "orassayag",
+    "syncer"
+  ],
   "cSpell.ignorePaths": [
     "coverage",
     "node_modules",

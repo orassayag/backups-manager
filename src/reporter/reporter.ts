@@ -103,6 +103,25 @@ function buildSessionReport(sessionResult: SessionResult): string {
   return lines.join('\n');
 }
 
+function buildBotSummary(result: BackupResult): string {
+  const lines: string[] = [];
+  lines.push('#FOR-BOT#');
+
+  result.sessionResults.forEach((sessionResult) => {
+    const { session, status, diffEntries } = sessionResult;
+    const added = diffEntries.filter((e) => e.action === 'added').length;
+    const updated = diffEntries.filter((e) => e.action === 'updated').length;
+    const deleted = diffEntries.filter((e) => e.action === 'deleted').length;
+
+    lines.push(`${session.sourcePath} -> ${session.targetPath}`);
+    lines.push(`Status: ${status === 'success' ? 'SUCCESS' : 'FAILURE'}`);
+    lines.push(`Summary: ${added} add | ${updated} update | ${deleted} delete`);
+    lines.push('');
+  });
+
+  return lines.join('\n');
+}
+
 function buildReport(result: BackupResult): string {
   const lines: string[] = [];
   const dateStr = formatJerusalemTime(result.startTime);
@@ -126,6 +145,8 @@ function buildReport(result: BackupResult): string {
     lines.push('-'.repeat(SEPARATOR.length));
     lines.push('');
   });
+
+  lines.push(buildBotSummary(result));
 
   return lines.join('\n');
 }

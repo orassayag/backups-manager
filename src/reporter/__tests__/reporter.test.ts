@@ -51,6 +51,12 @@ describe('reporter', () => {
     expect(content).toContain('Target: /dest');
     expect(content).toContain('file1.txt');
     expect(content).toContain('added');
+
+    // Bot summary check
+    expect(content).toContain('#FOR-BOT#');
+    expect(content).toContain('/src -> /dest');
+    expect(content).toContain('Status: SUCCESS');
+    expect(content).toContain('Summary: 1 add | 0 update | 0 delete');
   });
 
   it('should show -- in size column for deleted files', () => {

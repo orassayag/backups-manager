@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { writeReport } from '../reporter.js';
+import { writeReport } from '../index.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import { BackupResult } from '../../types/types.js';
+import { BackupResult } from '../../types/index.js';
 
 vi.mock('fs');
-vi.mock('../../utils/utils.js', () => ({
+vi.mock('../../utils/index.js', () => ({
   getDesktopPath: vi.fn(() => '/mock/desktop'),
   formatJerusalemTime: vi.fn(() => '08/05/2026 17:00:00'),
   formatDuration: vi.fn(() => '5s'),

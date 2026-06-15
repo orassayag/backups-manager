@@ -36,5 +36,3 @@ export interface BackupResult {
   endTime: Date;
   sessionResults: SessionResult[];
 }
-
-export * from './logger';

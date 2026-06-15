@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import settings from '../settings.js';
+import settings from '../index.js';
 
 describe('settings', () => {
   it('should have default values', () => {

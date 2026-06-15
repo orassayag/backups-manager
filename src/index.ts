@@ -1,13 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import settings from './settings/settings';
-import { validateSettings } from './validators/validators';
-import { showMainMenu, showConfirmation, MenuChoice } from './menu/menu';
-import { runFullBackup } from './full-backup/fullBackup';
-import { runDiffBackup } from './diff-backup/diffBackup';
-import { writeReport } from './reporter/reporter';
-import { BackupResult } from './types/types';
-import { logger } from './logging';
+import settings from './settings/index';
+import { validateSettings } from './validators/index';
+import { showMainMenu, showConfirmation, MenuChoice } from './menu/index';
+import { runFullBackup } from './full-backup/index';
+import { runDiffBackup } from './diff-backup/index';
+import { writeReport } from './reporter/index';
+import { BackupResult } from './types/index';
+import { logger } from './logging/index';
 
 // Global signal handler for clean exit on Ctrl+C
 process.on('SIGINT', () => {

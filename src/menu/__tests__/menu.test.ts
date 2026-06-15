@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { showMainMenu, showConfirmation } from '../menu.js';
+import { showMainMenu, showConfirmation } from '../index.js';
 import pkg from 'enquirer';
 const { Select } = pkg as any;
 import * as fs from 'fs';
-import { Settings } from '../../settings/settings.js';
+import { Settings } from '../../settings/index.js';
 
 vi.mock('enquirer', () => {
   const Select = vi.fn().mockImplementation(function (this: any) {

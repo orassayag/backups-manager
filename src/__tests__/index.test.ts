@@ -1,18 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { main } from '../index.js';
 import * as fs from 'fs';
-import { showMainMenu, showConfirmation } from '../menu/menu.js';
-import { runFullBackup } from '../full-backup/fullBackup.js';
-import { runDiffBackup } from '../diff-backup/diffBackup.js';
-import { writeReport } from '../reporter/reporter.js';
+import { showMainMenu, showConfirmation } from '../menu/index.js';
+import { runFullBackup } from '../full-backup/index.js';
+import { runDiffBackup } from '../diff-backup/index.js';
+import { writeReport } from '../reporter/index.js';
 
 // Mock all dependencies
 vi.mock('fs');
-vi.mock('../menu/menu.js');
-vi.mock('../full-backup/fullBackup.js');
-vi.mock('../diff-backup/diffBackup.js');
-vi.mock('../reporter/reporter.js');
-vi.mock('../validators/validators.js');
+vi.mock('../menu/index.js');
+vi.mock('../full-backup/index.js');
+vi.mock('../diff-backup/index.js');
+vi.mock('../reporter/index.js');
+vi.mock('../validators/index.js');
 
 describe('index main', () => {
   let processExitSpy: any;

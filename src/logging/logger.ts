@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import { LogLevel, LogEntry } from '../types/logger';
-import { LOG_CONFIG } from './logConfig';
+import { LogLevel, LogEntry } from '../types/index';
+import { LOG_CONFIG } from './index';
 
 export class Logger {
   private context: string = 'App';

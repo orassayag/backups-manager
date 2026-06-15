@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { validateSettings } from '../validators.js';
-import { Settings } from '../../settings/settings.js';
+import { validateSettings } from '../index.js';
+import { Settings } from '../../settings/index.js';
 
 describe('validators', () => {
   let consoleErrorSpy: any;

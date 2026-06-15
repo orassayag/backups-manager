@@ -8,7 +8,7 @@
  */
 
 import ora, { Ora } from 'ora';
-import { formatElapsed } from '../utils/utils';
+import { formatElapsed } from '../utils/index';
 
 export class ProgressTracker {
   private spinner: Ora;

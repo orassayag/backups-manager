@@ -1,4 +1,4 @@
-import { LogLevel } from '../types/logger';
+import { LogLevel } from '../types/index';
 
 export const LOG_CONFIG = {
   level: (process.env.LOG_LEVEL as LogLevel) || LogLevel.DEBUG,

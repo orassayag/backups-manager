@@ -5,16 +5,16 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { Settings } from '../settings/settings';
+import { Settings } from '../settings/index';
 import {
   BackupResult,
   FailedFile,
   Session,
   SessionResult,
-} from '../types/types';
-import { scanDirectory, resolvePath, copyFile } from '../utils/utils';
-import { ProgressTracker } from '../progress/progress';
-import { logger } from '../logging';
+} from '../types/index';
+import { scanDirectory, resolvePath, copyFile } from '../utils/index';
+import { ProgressTracker } from '../progress/index';
+import { logger } from '../logging/index';
 
 /**
  * Processes a single session for full backup.
@@ -135,7 +135,8 @@ export async function runFullBackup(settings: Settings): Promise<BackupResult> {
   let sessions: Session[] = [];
   try {
     const sessionsContent = fs.readFileSync(sessionsPath, 'utf8');
-    sessions = JSON.parse(sessionsContent);
+    const parsed = JSON.parse(sessionsContent);
+    sessions = Array.isArray(parsed) ? parsed : [];
     logger.debug('Sessions loaded', { count: sessions.length });
   } catch (err: any) {
     logger.error('Error reading sessions.json', err);

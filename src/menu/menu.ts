@@ -7,8 +7,8 @@ import pkg from 'enquirer';
 const { Select } = pkg as any;
 import * as fs from 'fs';
 import * as path from 'path';
-import { Settings } from '../settings/settings';
-import { Session } from '../types/types';
+import { Settings } from '../settings/index';
+import { Session } from '../types/index';
 
 export type MenuChoice = 'full' | 'diff' | 'clear-cache' | 'exit';
 

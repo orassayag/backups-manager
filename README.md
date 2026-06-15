@@ -1,10 +1,26 @@
 # Backups Manager
 
-A cross-platform (Windows / macOS / Ubuntu) TypeScript tool that backs up files via full and differential modes. It ensures your data is synchronized across multiple targets while providing real-time progress tracking and detailed reporting.
+Backups Manager is a cross-platform (Windows, macOS, Ubuntu) TypeScript utility designed to automate reliable file backups using full and differential strategies. It intelligently compares file states using size and modification timestamps, enabling efficient synchronization across multiple destinations. The tool provides real-time progress feedback, structured logging, and detailed reporting to a desktop-generated report file.
 
-Built in April 2026, this project focuses on reliability, automation, and efficient storage management for developers and power users managing backups across different locations.
+Built in April 2026, it emphasizes automation, scalability, and robust data protection for developers managing complex backup workflows.
 
 ## Features
+
+- 📦 Multi-Mode Backups (Full and Differential)
+- 🔄 Intelligent Synchronization with size/timestamp comparison
+- 🚫 Advanced Exclusions with glob patterns
+- 🗂️ Multi-Session Processing for batch backups
+- 📊 Real-Time Monitoring with spinners and progress
+- 📝 Automated Reporting with desktop report files
+- 🎯 Type Safety with strict TypeScript
+- 🧪 Comprehensive Unit Testing with Vitest
+- 🔒 Zod Validation for configuration integrity
+- 🏗️ Clean Code Architecture with separation of concerns
+- 🖥️ Cross-Platform Compatibility (Windows, macOS, Linux)
+- ⌨️ Interactive CLI with Inquirer
+- 🤖 Automation Ready with CLI flags
+- 👀 Watch Mode for rapid development
+- 📈 Visual Testing with Vitest UI
 
 ### Core Capabilities
 
@@ -185,11 +201,12 @@ This application has an MIT license - see the [LICENSE](LICENSE) file for detail
 
 ## Acknowledgments
 
-- Built for educational and research purposes
-- Respects robots.txt and implements rate limiting
-- Uses user-agent rotation to avoid detection
-- Implements polite crawling practices
+Built with:
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- [Node.js](https://nodejs.org/) - JavaScript runtime
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [Vitest](https://vitest.dev/) - Testing framework
+- [Inquirer](https://www.npmjs.com/package/inquirer) - Interactive prompts
+- [Ora](https://www.npmjs.com/package/ora) - Spinners
+- [dir-compare](https://www.npmjs.com/package/dir-compare) - Directory comparison
+- [Zod](https://zod.dev/) - Schema validation

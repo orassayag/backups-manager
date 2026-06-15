@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { runDiffBackup } from '../diffBackup.js';
+import { runDiffBackup } from '../index.js';
 import * as fs from 'fs';
-import { Settings } from '../../settings/settings.js';
-import * as utils from '../../utils/utils.js';
+import { Settings } from '../../settings/index.js';
+import * as utils from '../../utils/index.js';
 
 vi.mock('fs');
-vi.mock('../../utils/utils.js');
-vi.mock('../../progress/progress.js', () => {
+vi.mock('../../utils/index.js');
+vi.mock('../../progress/index.js', () => {
   return {
     ProgressTracker: vi.fn().mockImplementation(function (this: any) {
       this.init = vi.fn();

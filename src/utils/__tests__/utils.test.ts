@@ -10,7 +10,7 @@ import {
   copyFile,
   resolvePath,
   getDesktopPath,
-} from '../utils.js';
+} from '../index.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

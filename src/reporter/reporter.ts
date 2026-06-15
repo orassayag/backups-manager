@@ -5,13 +5,13 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { BackupResult, SessionResult } from '../types/types';
+import { BackupResult, SessionResult } from '../types/index';
 import {
   getDesktopPath,
   formatJerusalemTime,
   formatDuration,
   formatSize,
-} from '../utils/utils';
+} from '../utils/index';
 
 const REPORT_FILENAME = 'BACKUP_REPORT.txt';
 const COL_PATH = 52;

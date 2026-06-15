@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ProgressTracker } from '../progress.js';
+import { ProgressTracker } from '../index.js';
 import ora from 'ora';
 
 vi.mock('ora', () => {

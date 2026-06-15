@@ -3,7 +3,7 @@
  * Validates global settings before any backup operation begins.
  */
 
-import { Settings } from '../settings/settings';
+import { Settings } from '../settings/index';
 
 export function validateSettings(settings: Settings): void {
   const errors: string[] = [];

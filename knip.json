@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignore": [],
+  "ignoreDependencies": [
+    "@eslint/js",
+    "@rolldown/binding-win32-x64-msvc",
+    "eslint-plugin-prettier",
+    "typescript-eslint"
+  ],
+  "ignoreBinaries": []
+}

@@ -201,12 +201,7 @@ This application has an MIT license - see the [LICENSE](LICENSE) file for detail
 
 ## Acknowledgments
 
-Built with:
-
-- [Node.js](https://nodejs.org/) - JavaScript runtime
-- [TypeScript](https://www.typescriptlang.org/) - Type safety
-- [Vitest](https://vitest.dev/) - Testing framework
-- [Inquirer](https://www.npmjs.com/package/inquirer) - Interactive prompts
-- [Ora](https://www.npmjs.com/package/ora) - Spinners
-- [dir-compare](https://www.npmjs.com/package/dir-compare) - Directory comparison
-- [Zod](https://zod.dev/) - Schema validation
+- Built for educational and research purposes
+- Respects robots.txt and implements rate limiting
+- Uses user-agent rotation to avoid detection
+- Implements polite crawling practices

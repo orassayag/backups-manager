@@ -61,6 +61,30 @@ async function processSession(
     };
   }
 
+  // Check if target path parent is accessible
+  const targetParent = path.dirname(targetPath);
+  try {
+    if (!fs.existsSync(targetParent)) {
+      fs.mkdirSync(targetParent, { recursive: true });
+    }
+    // Test if we can write to target path by creating a temporary file
+    const testFile = path.join(targetParent, `.backup-test-${Date.now()}.tmp`);
+    fs.writeFileSync(testFile, 'test');
+    fs.unlinkSync(testFile);
+  } catch (err: unknown) {
+    logger.warn('Skipping session: Target path not accessible', {
+      targetPath,
+      error: err,
+    });
+    return {
+      session,
+      status: 'skipped',
+      diffEntries: [],
+      failedFiles: [],
+      error: `Target path not accessible: ${targetPath} - ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
   // 2. Load Cache (using a unique key for each session if possible, but keeping current behavior for now)
   // For simplicity and to match user request, I'll use the same cache file.
   // However, to avoid conflicts between sessions, let's use a session-specific cache name.

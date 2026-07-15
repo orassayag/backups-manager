@@ -84,7 +84,10 @@ async function processSession(
   const sourceFiles = scanDirectory(
     sourcePath,
     settings.excludeNames,
-    settings.excludePatterns
+    settings.excludePatterns,
+    session.excludePaths,
+    session.excludeNames,
+    session.excludePatterns
   );
 
   progress.setTotalFiles(sourceFiles.length);

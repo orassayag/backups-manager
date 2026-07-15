@@ -20,6 +20,9 @@ export interface FailedFile {
 export interface Session {
   sourcePath: string;
   targetPath: string;
+  excludePaths?: string[];
+  excludeNames?: string[];
+  excludePatterns?: string[];
 }
 
 export interface SessionResult {

@@ -110,7 +110,10 @@ async function processSession(
   const currentFiles = scanDirectory(
     sourcePath,
     settings.excludeNames,
-    settings.excludePatterns
+    settings.excludePatterns,
+    session.excludePaths,
+    session.excludeNames,
+    session.excludePatterns
   );
   const currentFilesMap = new Map<string, ScannedFile>();
 
@@ -164,7 +167,10 @@ async function processSession(
     const targetFiles = scanDirectory(
       targetPath,
       settings.excludeNames,
-      settings.excludePatterns
+      settings.excludePatterns,
+      session.excludePaths,
+      session.excludeNames,
+      session.excludePatterns
     );
     for (const tFile of targetFiles) {
       if (!currentFilesMap.has(tFile.relativePath)) {

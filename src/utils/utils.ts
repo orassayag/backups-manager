@@ -75,13 +75,39 @@ export function getDesktopPath(): string {
 export function isExcluded(
   entryName: string,
   relPath: string,
-  excludeNames: string[],
-  excludePatterns: string[]
+  absEntry: string,
+  globalExcludeNames: string[] = [],
+  globalExcludePatterns: string[] = [],
+  sessionExcludePaths?: string[],
+  sessionExcludeNames?: string[],
+  sessionExcludePatterns?: string[]
 ): boolean {
-  if (excludeNames.includes(entryName)) return true;
-  if (excludePatterns.length > 0) {
-    if (micromatch.isMatch(relPath, excludePatterns)) return true;
-    if (micromatch.isMatch(entryName, excludePatterns)) return true;
+  // Check session exclude paths
+  if (sessionExcludePaths) {
+    for (const excludePath of sessionExcludePaths) {
+      const normalizedExcludePath = normalizePath(path.resolve(excludePath));
+      const normalizedAbsEntry = normalizePath(absEntry);
+      if (normalizedAbsEntry.startsWith(normalizedExcludePath)) {
+        return true;
+      }
+    }
+  }
+
+  // Combine global and session exclude names
+  const allExcludeNames = [
+    ...globalExcludeNames,
+    ...(sessionExcludeNames || []),
+  ];
+  if (allExcludeNames.includes(entryName)) return true;
+
+  // Combine global and session exclude patterns
+  const allExcludePatterns = [
+    ...globalExcludePatterns,
+    ...(sessionExcludePatterns || []),
+  ];
+  if (allExcludePatterns.length > 0) {
+    if (micromatch.isMatch(relPath, allExcludePatterns)) return true;
+    if (micromatch.isMatch(entryName, allExcludePatterns)) return true;
   }
   return false;
 }
@@ -154,8 +180,11 @@ export interface ScannedFile {
  */
 export function scanDirectory(
   rootDir: string,
-  excludeNames: string[],
-  excludePatterns: string[]
+  globalExcludeNames: string[],
+  globalExcludePatterns: string[],
+  sessionExcludePaths?: string[],
+  sessionExcludeNames?: string[],
+  sessionExcludePatterns?: string[]
 ): ScannedFile[] {
   const results: ScannedFile[] = [];
   const stack: { relDir: string; absDir: string }[] = [
@@ -201,11 +230,22 @@ export function scanDirectory(
 
     for (const entry of entries) {
       const relEntry = relDir ? `${relDir}/${entry.name}` : entry.name;
-      if (isExcluded(entry.name, relEntry, excludeNames, excludePatterns))
+      const absEntry = path.join(absDir, entry.name);
+      if (
+        isExcluded(
+          entry.name,
+          relEntry,
+          absEntry,
+          globalExcludeNames,
+          globalExcludePatterns,
+          sessionExcludePaths,
+          sessionExcludeNames,
+          sessionExcludePatterns
+        )
+      )
         continue;
 
       hasIncludedEntries = true;
-      const absEntry = path.join(absDir, entry.name);
 
       if (entry.isDirectory()) {
         stack.push({ relDir: relEntry, absDir: absEntry });

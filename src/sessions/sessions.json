@@ -1,7 +1,8 @@
 [
   {
     "sourcePath": "C:\\Or",
-    "targetPath": "D:\\Or"
+    "targetPath": "D:\\Or",
+    "excludePaths": ["D:\\Or\\stuff-from-cds\\"]
   },
   {
     "sourcePath": "C:\\Or\\web",

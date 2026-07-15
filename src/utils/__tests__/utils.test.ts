@@ -92,25 +92,25 @@ describe('utils', () => {
   describe('isExcluded', () => {
     it('should return true if entry name is in excludeNames', () => {
       expect(
-        isExcluded('node_modules', 'src/node_modules', ['node_modules'], [])
+        isExcluded('node_modules', 'src/node_modules', '/root/src/node_modules', ['node_modules'], [])
       ).toBe(true);
     });
 
     it('should return true if relPath matches excludePatterns', () => {
       expect(
-        isExcluded('test.log', 'logs/test.log', [], ['*.log', 'logs/*.log'])
+        isExcluded('test.log', 'logs/test.log', '/root/logs/test.log', [], ['*.log', 'logs/*.log'])
       ).toBe(true);
     });
 
     it('should return true if entry name matches excludePatterns', () => {
-      expect(isExcluded('temp.tmp', 'some/path/temp.tmp', [], ['*.tmp'])).toBe(
+      expect(isExcluded('temp.tmp', 'some/path/temp.tmp', '/root/some/path/temp.tmp', [], ['*.tmp'])).toBe(
         true
       );
     });
 
     it('should return false if no match', () => {
       expect(
-        isExcluded('index.ts', 'src/index.ts', ['node_modules'], ['*.log'])
+        isExcluded('index.ts', 'src/index.ts', '/root/src/index.ts', ['node_modules'], ['*.log'])
       ).toBe(false);
     });
   });

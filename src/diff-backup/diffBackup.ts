@@ -23,6 +23,61 @@ interface CacheData {
   [relativePath: string]: { size: number; mtime: number };
 }
 
+interface FailureLog {
+  [sessionKey: string]: {
+    [relativePath: string]: { consecutiveFailures: number };
+  };
+}
+
+function getSessionKey(sourcePath: string, targetPath: string): string {
+  return Buffer.from(`${sourcePath}:${targetPath}`).toString('hex');
+}
+
+function loadFailureLog(): FailureLog {
+  const failureLogPath = path.join(CACHE_DIR, 'failure-log.json');
+  if (fs.existsSync(failureLogPath)) {
+    try {
+      return JSON.parse(fs.readFileSync(failureLogPath, 'utf8'));
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+function saveFailureLog(log: FailureLog) {
+  if (!fs.existsSync(CACHE_DIR)) {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+  }
+  fs.writeFileSync(
+    path.join(CACHE_DIR, 'failure-log.json'),
+    JSON.stringify(log, null, 2)
+  );
+}
+
+function loadAutoIgnoreList(): string[] {
+  const autoIgnorePath = path.join(CACHE_DIR, 'auto-ignore.json');
+  if (fs.existsSync(autoIgnorePath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(autoIgnorePath, 'utf8'));
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function saveAutoIgnoreList(list: string[]) {
+  if (!fs.existsSync(CACHE_DIR)) {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+  }
+  fs.writeFileSync(
+    path.join(CACHE_DIR, 'auto-ignore.json'),
+    JSON.stringify(list, null, 2)
+  );
+}
+
 /**
  * Processes a single session for diff backup.
  */
@@ -37,6 +92,12 @@ async function processSession(
 
   const sourcePath = resolvePath(session.sourcePath);
   const targetPath = resolvePath(session.targetPath);
+  const sessionKey = getSessionKey(sourcePath, targetPath);
+
+  // Load failure log and auto-ignore list
+  const failureLog = loadFailureLog();
+  const autoIgnoreList = loadAutoIgnoreList();
+  const sessionFailures = failureLog[sessionKey] || {};
 
   // 1. Validation
   if (!session.sourcePath || !session.targetPath) {
@@ -88,10 +149,7 @@ async function processSession(
   // 2. Load Cache (using a unique key for each session if possible, but keeping current behavior for now)
   // For simplicity and to match user request, I'll use the same cache file.
   // However, to avoid conflicts between sessions, let's use a session-specific cache name.
-  const sessionHash = Buffer.from(`${sourcePath}:${targetPath}`).toString(
-    'hex'
-  );
-  const sessionCachePath = path.join(CACHE_DIR, `cache-${sessionHash}.json`);
+  const sessionCachePath = path.join(CACHE_DIR, `cache-${sessionKey}.json`);
 
   let cache: CacheData = {};
   if (fs.existsSync(sessionCachePath)) {
@@ -110,7 +168,7 @@ async function processSession(
   const currentFiles = scanDirectory(
     sourcePath,
     settings.excludeNames,
-    settings.excludePatterns,
+    [...settings.excludePatterns, ...autoIgnoreList],
     session.excludePaths,
     session.excludeNames,
     session.excludePatterns
@@ -133,7 +191,10 @@ async function processSession(
       try {
         const targetStat = fs.statSync(targetFilePath);
         const sizeMatch = targetStat.size === file.size;
-        const mtimeMatch = Math.abs(targetStat.mtimeMs - file.mtime) < 1000;
+        // FIX 2: More precise mtime check (use Math.floor to whole seconds for better comparison)
+        const mtimeMatch =
+          Math.floor(targetStat.mtimeMs / 1000) ===
+          Math.floor(file.mtime / 1000);
         if (sizeMatch && mtimeMatch) {
           identical = true;
         }
@@ -167,7 +228,7 @@ async function processSession(
     const targetFiles = scanDirectory(
       targetPath,
       settings.excludeNames,
-      settings.excludePatterns,
+      [...settings.excludePatterns, ...autoIgnoreList],
       session.excludePaths,
       session.excludeNames,
       session.excludePatterns
@@ -191,6 +252,7 @@ async function processSession(
   progress.setTotalFiles(diffEntries.length);
 
   // 4. Execute Operations
+  const processedFiles = new Set<string>();
   for (const entry of diffEntries) {
     const targetFilePath = path.join(
       targetPath,
@@ -216,18 +278,52 @@ async function processSession(
         );
         fs.mkdirSync(path.dirname(targetFilePath), { recursive: true });
         await copyFile(sourceFile.absolutePath, targetFilePath);
+        // FIX 2: Explicitly set target file's mtime to match source (using ms)
         const sourceStat = fs.statSync(sourceFile.absolutePath);
-        fs.utimesSync(targetFilePath, sourceStat.atime, sourceStat.mtime);
+        // Use fs.utimesSync with Date objects to preserve milliseconds
+        fs.utimesSync(
+          targetFilePath,
+          new Date(sourceStat.atimeMs),
+          new Date(sourceStat.mtimeMs)
+        );
       }
+      // Success - reset failure count
+      if (sessionFailures[entry.relativePath]) {
+        delete sessionFailures[entry.relativePath];
+      }
+      processedFiles.add(entry.relativePath);
     } catch (err: any) {
       failedFiles.push({
         sourcePath: entry.relativePath,
         targetPath: targetFilePath,
         error: err.message,
       });
+
+      // Track failure for auto-ignore
+      if (!sessionFailures[entry.relativePath]) {
+        sessionFailures[entry.relativePath] = { consecutiveFailures: 0 };
+      }
+      sessionFailures[entry.relativePath].consecutiveFailures++;
+
+      // Check if we need to auto-ignore this file
+      if (
+        sessionFailures[entry.relativePath].consecutiveFailures >=
+          settings.autoIgnoreFailureThreshold &&
+        !autoIgnoreList.includes(entry.relativePath)
+      ) {
+        logger.info(
+          `Auto-ignoring file after ${settings.autoIgnoreFailureThreshold} consecutive failures: ${entry.relativePath}`
+        );
+        autoIgnoreList.push(entry.relativePath);
+        saveAutoIgnoreList(autoIgnoreList);
+      }
     }
     progress.fileComplete();
   }
+
+  // Update failure log
+  failureLog[sessionKey] = sessionFailures;
+  saveFailureLog(failureLog);
 
   // 5. Update Cache
   const newCache: CacheData = {};

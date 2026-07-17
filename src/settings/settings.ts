@@ -15,6 +15,8 @@ export interface Settings {
   automaticMode: boolean;
   /** In automatic mode, which operation to perform: 'full' or 'diff'. */
   automaticOperation: 'full' | 'diff';
+  /** Number of consecutive failures after which a file is auto-ignored */
+  autoIgnoreFailureThreshold: number;
 }
 
 const settings: Settings = {
@@ -36,6 +38,9 @@ const settings: Settings = {
   // ─── AUTOMATIC MODE ──────────────────────────────────────────────────────────
   automaticMode: false,
   automaticOperation: 'diff',
+
+  // ─── AUTO-IGNORE ─────────────────────────────────────────────────────────────
+  autoIgnoreFailureThreshold: 3, // Auto-ignore after 3 consecutive failures
 };
 
 export default settings;

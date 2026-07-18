@@ -191,10 +191,10 @@ async function processSession(
       try {
         const targetStat = fs.statSync(targetFilePath);
         const sizeMatch = targetStat.size === file.size;
-        // FIX 2: More precise mtime check (use Math.floor to whole seconds for better comparison)
-        const mtimeMatch =
-          Math.floor(targetStat.mtimeMs / 1000) ===
-          Math.floor(file.mtime / 1000);
+        // Normalize both times to whole seconds
+        const sourceMtimeSec = Math.floor(file.mtime / 1000);
+        const targetMtimeSec = Math.floor(targetStat.mtimeMs / 1000);
+        const mtimeMatch = sourceMtimeSec === targetMtimeSec;
         if (sizeMatch && mtimeMatch) {
           identical = true;
         }
@@ -278,14 +278,6 @@ async function processSession(
         );
         fs.mkdirSync(path.dirname(targetFilePath), { recursive: true });
         await copyFile(sourceFile.absolutePath, targetFilePath);
-        // FIX 2: Explicitly set target file's mtime to match source (using ms)
-        const sourceStat = fs.statSync(sourceFile.absolutePath);
-        // Use fs.utimesSync with Date objects to preserve milliseconds
-        fs.utimesSync(
-          targetFilePath,
-          new Date(sourceStat.atimeMs),
-          new Date(sourceStat.mtimeMs)
-        );
       }
       // Success - reset failure count
       if (sessionFailures[entry.relativePath]) {

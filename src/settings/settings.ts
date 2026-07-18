@@ -31,6 +31,8 @@ const settings: Settings = {
     '.nuxt',
     '.DS_Store',
     'Thumbs.db',
+    'desktop.ini',
+    '.AppleSyncInfo',
   ],
 
   excludePatterns: ['**/backup-results.json'],

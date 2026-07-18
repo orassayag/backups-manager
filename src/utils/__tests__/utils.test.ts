@@ -326,11 +326,18 @@ describe('utils', () => {
 
       vi.spyOn(fs, 'createReadStream').mockReturnValue(mockReadStream as any);
       vi.spyOn(fs, 'createWriteStream').mockReturnValue(mockWriteStream as any);
+      vi.spyOn(fs, 'statSync').mockReturnValue({
+        atimeMs: 1234567890,
+        mtimeMs: 9876543210,
+      } as any);
+      vi.spyOn(fs, 'utimesSync').mockImplementation(() => {});
 
       await expect(copyFile('src', 'dest')).resolves.toBeUndefined();
       expect(fs.createReadStream).toHaveBeenCalledWith('src');
       expect(fs.createWriteStream).toHaveBeenCalledWith('dest');
       expect(mockReadStream.pipe).toHaveBeenCalledWith(mockWriteStream);
+      expect(fs.statSync).toHaveBeenCalledWith('src');
+      expect(fs.utimesSync).toHaveBeenCalled();
     });
 
     it('should handle read stream error', async () => {
@@ -348,6 +355,11 @@ describe('utils', () => {
 
       vi.spyOn(fs, 'createReadStream').mockReturnValue(mockReadStream as any);
       vi.spyOn(fs, 'createWriteStream').mockReturnValue(mockWriteStream as any);
+      vi.spyOn(fs, 'statSync').mockReturnValue({
+        atimeMs: 1234567890,
+        mtimeMs: 9876543210,
+      } as any);
+      vi.spyOn(fs, 'utimesSync').mockImplementation(() => {});
 
       await expect(copyFile('src', 'dest')).rejects.toThrow('read error');
       expect(mockWriteStream.destroy).toHaveBeenCalled();
@@ -368,6 +380,11 @@ describe('utils', () => {
 
       vi.spyOn(fs, 'createReadStream').mockReturnValue(mockReadStream as any);
       vi.spyOn(fs, 'createWriteStream').mockReturnValue(mockWriteStream as any);
+      vi.spyOn(fs, 'statSync').mockReturnValue({
+        atimeMs: 1234567890,
+        mtimeMs: 9876543210,
+      } as any);
+      vi.spyOn(fs, 'utimesSync').mockImplementation(() => {});
 
       await expect(copyFile('src', 'dest')).rejects.toThrow('write error');
       expect(mockWriteStream.destroy).toHaveBeenCalled();

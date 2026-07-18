@@ -296,10 +296,11 @@ export function scanDirectory(
 }
 
 /**
- * Promisified file copy using streams.
+ * Promisified file copy using streams, preserves source file's atime and mtime.
  */
 export function copyFile(src: string, dest: string): Promise<void> {
   return new Promise((resolve, reject) => {
+    const stat = fs.statSync(src);
     const rd = fs.createReadStream(src);
     const wr = fs.createWriteStream(dest);
     rd.on('error', (err) => {
@@ -310,7 +311,11 @@ export function copyFile(src: string, dest: string): Promise<void> {
       wr.destroy();
       reject(err);
     });
-    wr.on('close', resolve);
+    wr.on('close', () => {
+      // Preserve the original file times (atime and mtime)
+      fs.utimesSync(dest, new Date(stat.atimeMs), new Date(stat.mtimeMs));
+      resolve();
+    });
     rd.pipe(wr);
   });
 }

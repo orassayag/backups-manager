@@ -187,7 +187,17 @@ async function processSession(
     );
 
     let identical = false;
-    if (fs.existsSync(targetFilePath)) {
+    // First check cache: if source file hasn't changed since last run, assume it's okay
+    if (cache[file.relativePath]) {
+      const cached = cache[file.relativePath];
+      const sourceMtimeSec = Math.floor(file.mtime / 1000);
+      const cachedMtimeSec = Math.floor(cached.mtime / 1000);
+      if (cached.size === file.size && sourceMtimeSec === cachedMtimeSec) {
+        identical = true;
+      }
+    }
+    // If not identical from cache, check target file
+    if (!identical && fs.existsSync(targetFilePath)) {
       try {
         const targetStat = fs.statSync(targetFilePath);
         const sizeMatch = targetStat.size === file.size;

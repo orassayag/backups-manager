@@ -93,12 +93,14 @@ export function isExcluded(
     }
   }
 
-  // Combine global and session exclude names
+  // Combine global and session exclude names (case-insensitive)
   const allExcludeNames = [
     ...globalExcludeNames,
     ...(sessionExcludeNames || []),
   ];
-  if (allExcludeNames.includes(entryName)) return true;
+  const entryNameLower = entryName.toLowerCase();
+  if (allExcludeNames.some((name) => name.toLowerCase() === entryNameLower))
+    return true;
 
   // Combine global and session exclude patterns
   const allExcludePatterns = [
